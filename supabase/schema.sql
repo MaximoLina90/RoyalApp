@@ -79,14 +79,16 @@ $$;
 -- Alta de perfil validando la palabra clave del equipo (reemplaza el chequeo inseguro de la app Android)
 create or replace function public.registrar_perfil(p_keyword text, p_nombre text, p_celular text, p_codigo text)
 returns void language plpgsql security definer set search_path = public, extensions as $$
-declare h text; u uuid := auth.uid(); m text;
+declare h text; u uuid := auth.uid(); m text; r text;
 begin
   if u is null then raise exception 'No autenticado'; end if;
   select keyword_hash into h from config where id = 1;
   if h is null or crypt(p_keyword, h) <> h then raise exception 'Palabra clave incorrecta'; end if;
   select email into m from auth.users where id = u;
-  insert into profiles(id, nombre, email, celular, codigo_vendedor)
-  values (u, p_nombre, m, p_celular, p_codigo)
+  -- el primer usuario registrado queda como admin
+  r := case when exists(select 1 from profiles where rol = 'admin') then 'vendedor' else 'admin' end;
+  insert into profiles(id, nombre, email, celular, codigo_vendedor, rol)
+  values (u, p_nombre, m, p_celular, p_codigo, r)
   on conflict (id) do update set nombre = excluded.nombre, celular = excluded.celular, codigo_vendedor = excluded.codigo_vendedor;
 end $$;
 
