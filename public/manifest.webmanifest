@@ -1,0 +1,2 @@
+{ "name": "Royal App", "short_name": "Royal", "start_url": "/", "display": "standalone", "background_color": "#ffffff", "theme_color": "#004a90",
+  "icons": [{ "src": "/icon.png", "sizes": "512x512", "type": "image/png" }] }
