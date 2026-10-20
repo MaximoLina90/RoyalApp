@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, ReactNode } from 'react';
-import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt } from 'lucide-react';
+import { useEffect, useState, ReactNode } from 'react';
+import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt, ChefHat, GraduationCap, Store, Menu, X } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useCart } from './CartProvider';
 import { Spinner } from './ui';
@@ -16,11 +16,20 @@ const NAV = [
   { href: '/estadisticas', label: 'Ventas', icon: BarChart3 },
 ];
 
+const EXTRA = [
+  { href: '/ventas', label: 'Mis pedidos', icon: Receipt },
+  { href: '/marketplace', label: 'Marketplace', icon: Store },
+  { href: '/recetas', label: 'Recetas Royal', icon: ChefHat },
+  { href: '/capacitacion', label: 'Capacitación', icon: GraduationCap },
+];
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const { session, profile, loading, signOut } = useAuth();
   const { count } = useCart();
   const path = usePathname();
   const router = useRouter();
+  const [menu, setMenu] = useState(false);
+  useEffect(() => setMenu(false), [path]);
 
   useEffect(() => {
     if (loading) return;
@@ -48,7 +57,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
               {href === '/cotizador' && count > 0 && <span className="ml-auto rounded-full bg-coral-500 px-2 py-0.5 text-xs font-bold text-white">{count}</span>}
             </Link>
           ))}
-          <Link href="/ventas" className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${path.startsWith('/ventas') ? 'bg-white text-royal-700 shadow' : 'text-royal-50 hover:bg-white/10'}`}><Receipt size={19} /> Mis pedidos</Link>
+          <div className="mx-3 my-3 border-t border-white/15" />
+          {EXTRA.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${path.startsWith(href) ? 'bg-white text-royal-700 shadow' : 'text-royal-50 hover:bg-white/10'}`}><Icon size={19} /> {label}</Link>
+          ))}
           {profile.rol === 'admin' && (
             <Link href="/admin" className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active('/admin') ? 'bg-white text-royal-700 shadow' : 'text-royal-50 hover:bg-white/10'}`}><Settings size={19} /> Administración</Link>
           )}
@@ -66,11 +78,26 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div className="rounded-full bg-white p-0.5"><Image src="/icon.png" alt="" width={30} height={30} /></div>
           <span className="font-bold">Royal App</span>
         </div>
-        <div className="flex items-center gap-1">
-          {profile.rol === 'admin' && <Link href="/admin" className="rounded-full p-2 hover:bg-white/10" aria-label="Administración"><Settings size={20} /></Link>}
-          <button onClick={salir} className="rounded-full p-2 hover:bg-white/10" aria-label="Cerrar sesión"><LogOut size={20} /></button>
-        </div>
+        <button onClick={() => setMenu(true)} className="rounded-full p-2 hover:bg-white/10" aria-label="Menú"><Menu size={22} /></button>
       </header>
+
+      {/* Menú mobile */}
+      {menu && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm md:hidden" onClick={() => setMenu(false)}>
+          <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between bg-royal-600 px-4 py-4 text-white">
+              <div className="min-w-0"><p className="truncate font-semibold">{profile.nombre}</p><p className="truncate text-xs text-royal-100">{profile.codigo_vendedor ? `Vendedor ${profile.codigo_vendedor}` : profile.email}</p></div>
+              <button onClick={() => setMenu(false)} className="rounded-full p-1.5 hover:bg-white/10" aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+              {[...EXTRA, ...(profile.rol === 'admin' ? [{ href: '/admin', label: 'Administración', icon: Settings }] : [])].map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${path.startsWith(href) ? 'bg-royal-50 text-royal-700' : 'text-slate-700 hover:bg-slate-50'}`}><Icon size={20} /> {label}</Link>
+              ))}
+            </nav>
+            <button onClick={salir} className="pb-safe flex items-center gap-3 border-t border-slate-100 px-6 py-4 text-sm font-semibold text-coral-600"><LogOut size={18} /> Cerrar sesión</button>
+          </div>
+        </div>
+      )}
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 md:px-8 md:pb-10 md:pt-8">{children}</main>
 

@@ -8,3 +8,7 @@ export type Evento = 'Demo' | 'Entrevista' | 'Capacitación' | 'Servicio' | 'Otr
 export const EVENTOS: Evento[] = ['Demo', 'Entrevista', 'Capacitación', 'Servicio', 'Otro'];
 export interface Tarea { id: string; usuario_id: string; fecha: string; horario: string | null; evento: Evento; titulo: string; ubicacion: string | null; notas: string | null }
 export interface ConfigPublica { factores: Record<string, number>; dias_mes: number }
+export type EstadoMk = 'Nuevo' | 'Usado' | 'Reacondicionado';
+export const ESTADOS_MK: EstadoMk[] = ['Nuevo', 'Usado', 'Reacondicionado'];
+export const CATEGORIAS_MK = ['Ollas y sartenes', 'Cuchillería', 'Electrodomésticos', 'Filtros de agua', 'Accesorios', 'Otro'];
+export interface MarketplaceItem { id: string; usuario_id: string; titulo: string; descripcion: string | null; categoria: string; estado: EstadoMk; precio: number; imagen_url: string | null; contacto: string | null; ubicacion: string | null; activo: boolean; created_at: string; vendedor_nombre: string | null }

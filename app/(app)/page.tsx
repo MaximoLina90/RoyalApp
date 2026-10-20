@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BookOpen, Calculator, CalendarDays, BarChart3, ArrowRight, MapPin, Clock } from 'lucide-react';
+import { BookOpen, Calculator, CalendarDays, BarChart3, Receipt, Store, ChefHat, GraduationCap, ArrowRight, MapPin, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { pesos, hoyISO, EVENTO_COLOR } from '@/lib/format';
@@ -13,6 +13,10 @@ const ACCESOS = [
   { href: '/cotizador', label: 'Cotizador', text: 'Cuotas al instante', icon: Calculator, color: 'from-coral-500 to-coral-600' },
   { href: '/cronograma', label: 'Agenda', text: 'Demos y visitas', icon: CalendarDays, color: 'from-emerald-500 to-emerald-700' },
   { href: '/estadisticas', label: 'Estadísticas', text: 'Tus resultados', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
+  { href: '/ventas', label: 'Mis pedidos', text: 'Historial de ventas', icon: Receipt, color: 'from-sky-500 to-blue-700' },
+  { href: '/marketplace', label: 'Marketplace', text: 'Comprá y vendé', icon: Store, color: 'from-violet-500 to-purple-700' },
+  { href: '/recetas', label: 'Recetas Royal', text: 'Próximamente', icon: ChefHat, color: 'from-rose-500 to-red-600' },
+  { href: '/capacitacion', label: 'Capacitación', text: 'Próximamente', icon: GraduationCap, color: 'from-teal-500 to-cyan-700' },
 ];
 
 export default function Inicio() {

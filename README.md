@@ -15,7 +15,7 @@ Web app (desktop + mobile) para el equipo de ventas **Royal Prestige®**. Recons
 Next.js 14 (App Router) · Tailwind · Supabase (Auth, Postgres con RLS, Storage) · Recharts · Vercel.
 
 ## Setup
-1. `supabase/schema.sql` y luego `supabase/seed.sql` en el SQL Editor de Supabase.
+1. `supabase/schema.sql`, `supabase/seed.sql` y `supabase/marketplace.sql` en el SQL Editor de Supabase.
 2. Variables: copiar `.env.example` a `.env.local`.
 3. `npm install && npm run dev`.
 
