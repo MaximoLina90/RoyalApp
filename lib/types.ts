@@ -18,4 +18,6 @@ export interface Nodo { codigo: string; nombre: string; superior: string | null;
 export interface VentaRed { id: string; usuario_id: string; numero: number; total: number; pago: 'Contado' | 'Financiado'; cuotas: number; created_at: string; vendedor_nombre: string; vendedor_codigo: string | null; lider_codigo: string | null; lider_nombre: string | null; equipo_numero: string | null; equipo_nombre: string | null }
 export interface Objetivo { id: string; creado_por: string | null; alcance: string; titulo: string; modo: 'meta' | 'competencia'; tipos: string[]; metrica: 'cantidad' | 'mayor'; cantidad: number | null; premio: number; desde: string; hasta: string; created_at: string }
 export interface Posicion { usuario_id: string; nombre: string; codigo: string | null; valor: number }
-export interface Video { id: string; titulo: string; descripcion: string | null; url: string; categoria: string | null; orden: number; activo: boolean; created_at: string }
+export interface Video { id: string; titulo: string; descripcion: string | null; url: string; categoria: string | null; idioma: 'es' | 'sub'; fuente: string | null; orden: number; activo: boolean; created_at: string }
+export interface CategoriaCap { slug: string; nombre: string; emoji: string | null; orden: number }
+export interface PendienteCap { id: string; categoria: string | null; titulo: string; accion: 'subtitular' | 'traducir' | 'grabar' | 'resumir' | 'enlazar'; fuente: string | null; url: string | null; nota: string | null; hecho: boolean }
