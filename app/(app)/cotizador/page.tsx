@@ -118,6 +118,10 @@ export default function Cotizador() {
           <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <div className="card space-y-4 p-5">
               <div>
+                <label className="label" htmlFor="cliente">Cliente</label>
+                <input id="cliente" className="input" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre del cliente (opcional)" />
+              </div>
+              <div>
                 <p className="label">Forma de pago</p>
                 <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
                   <button className={`seg ${cuotas === 1 ? 'seg-on' : 'seg-off'}`} onClick={() => setCuotas(1)}>Contado</button>
@@ -188,8 +192,7 @@ export default function Cotizador() {
       </Modal>
       <Modal open={compartirOpen} onClose={() => setCompartirOpen(false)} title="Compartir presupuesto">
         <div className="space-y-4">
-          <div><label className="label">Cliente (opcional)</label><input className="input" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre del cliente" /></div>
-          <p className="text-sm text-slate-500">Se genera un PDF con los productos, códigos, precios de lista, la forma de pago elegida, la tabla de todos los planes y tus datos de vendedor.</p>
+          <p className="text-sm text-slate-500">{cliente.trim() ? `Presupuesto para ${cliente.trim()}. ` : 'Sin cliente cargado: el PDF no lo incluye. '}Se genera un PDF con los productos, códigos, precios de lista, la forma de pago elegida, la tabla de todos los planes y tus datos de contacto.</p>
           <button className="btn-primary w-full" onClick={compartirPdf} disabled={pdfBusy}><Share2 size={17} /> {pdfBusy ? 'Generando…' : 'Compartir PDF'}</button>
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-secondary" onClick={bajarPdf} disabled={pdfBusy}><FileDown size={17} /> Descargar</button>

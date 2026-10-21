@@ -48,12 +48,16 @@ export async function generarPresupuesto(d: DatosPresupuesto): Promise<{ blob: B
   // Cliente y vendedor
   let y = 44;
   doc.setTextColor(...OSCURO); doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold'); doc.text('CLIENTE', M, y); doc.text('VENDEDOR', W / 2 + 4, y);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
-  doc.text(d.cliente?.trim() || '—', M, y + 6);
+  const cli = d.cliente?.trim();
   const v = d.vendedor;
-  const lv = [v?.nombre ?? '', v?.codigo_vendedor ? `Código ${v.codigo_vendedor}` : '', v?.celular ?? '', v?.email ?? ''].filter(Boolean);
-  lv.forEach((t, i) => doc.text(t, W / 2 + 4, y + 6 + i * 5));
+  const lv = [v?.nombre ?? '', v?.celular ?? '', v?.email ?? ''].filter(Boolean);
+  const xV = cli ? W / 2 + 4 : M;
+  doc.setFont('helvetica', 'bold');
+  if (cli) doc.text('CLIENTE', M, y);
+  doc.text('VENDEDOR', xV, y);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+  if (cli) doc.text(cli, M, y + 6);
+  lv.forEach((t, i) => doc.text(t, xV, y + 6 + i * 5));
   y += 8 + Math.max(1, lv.length) * 5;
 
   // Productos
@@ -131,10 +135,10 @@ export async function generarPresupuesto(d: DatosPresupuesto): Promise<{ blob: B
     doc.setPage(i);
     doc.setDrawColor(220, 220, 220); doc.line(M, H - 14, W - M, H - 14);
     doc.setFontSize(8); doc.setTextColor(130, 130, 130);
-    doc.text(`${v?.nombre ?? ''}${v?.codigo_vendedor ? ' · Cód. ' + v.codigo_vendedor : ''}${v?.celular ? ' · ' + v.celular : ''}`, M, H - 9);
+    doc.text(`${v?.nombre ?? ''}${v?.celular ? ' · ' + v.celular : ''}`, M, H - 9);
     doc.text(`Página ${i} de ${pags}`, W - M, H - 9, { align: 'right' });
   }
 
-  const slug = (d.cliente?.trim() || 'cliente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const slug = (cli || 'cliente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return { blob: doc.output('blob'), nombre: `presupuesto-royal-${slug}-${nro}.pdf` };
 }
