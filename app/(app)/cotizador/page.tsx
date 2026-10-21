@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Minus, Trash2, ShoppingCart, Search, Check, Share2 } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, Search, Check, Share2, FileDown, MessageCircle } from 'lucide-react';
+import { generarPresupuesto } from '@/lib/presupuestoPdf';
 import { useCart } from '@/components/CartProvider';
 import { useCatalogo, useConfig } from '@/components/data';
 import { PageHeader, Modal, Empty, Toast } from '@/components/ui';
@@ -27,6 +28,8 @@ export default function Cotizador() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<number | 'all'>('all');
   const [busy, setBusy] = useState(false);
+  const [compartirOpen, setCompartirOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const r = calcular(items, porc, cuotas, cfg.factores, cfg.dias_mes);
   const lista = useMemo(() => productos.filter((p) => (cat === 'all' || p.categoria_id === cat) && p.nombre.toLowerCase().includes(q.toLowerCase())), [productos, cat, q]);
@@ -39,11 +42,40 @@ export default function Cotizador() {
     '', `Vendedor: ${profile?.nombre}${profile?.codigo_vendedor ? ' (Cód. ' + profile.codigo_vendedor + ')' : ''}${profile?.celular ? ' · ' + profile.celular : ''}`, 'Royal Prestige®',
   ].join('\n');
 
-  const compartir = async () => {
-    const t = texto();
-    if (navigator.share) { try { await navigator.share({ text: t }); return; } catch {} }
-    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+  const pdf = () => generarPresupuesto({ items, porcentaje: porc, cuotas, factores: cfg.factores, diasMes: cfg.dias_mes, cliente, vendedor: profile ?? null });
+
+  const descargar = (blob: Blob, nombre: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
+
+  const compartirPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const { blob, nombre } = await pdf();
+      const file = new File([blob], nombre, { type: 'application/pdf' });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.share && nav.canShare?.({ files: [file] })) {
+        try { await nav.share({ files: [file], title: 'Presupuesto Royal Prestige', text: texto() }); setCompartirOpen(false); return; }
+        catch (e) { if ((e as Error)?.name === 'AbortError') return; }
+      }
+      descargar(blob, nombre);
+      toast.show('PDF descargado. Adjuntalo en WhatsApp o por mail.');
+      setCompartirOpen(false);
+    } catch (e) {
+      toast.show('No se pudo generar el PDF', 'error');
+    } finally { setPdfBusy(false); }
+  };
+
+  const bajarPdf = async () => {
+    setPdfBusy(true);
+    try { const { blob, nombre } = await pdf(); descargar(blob, nombre); setCompartirOpen(false); }
+    catch { toast.show('No se pudo generar el PDF', 'error'); }
+    finally { setPdfBusy(false); }
+  };
+
+  const compartirTexto = () => window.open('https://wa.me/?text=' + encodeURIComponent(texto()), '_blank');
 
   const guardar = async () => {
     setBusy(true);
@@ -116,7 +148,7 @@ export default function Cotizador() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-secondary" onClick={compartir}><Share2 size={17} /> Compartir</button>
+              <button className="btn-secondary" onClick={() => setCompartirOpen(true)}><Share2 size={17} /> Compartir</button>
               <button className="btn-primary" onClick={() => setConfirmar(true)}><Check size={17} /> Confirmar</button>
             </div>
             <button className="btn-ghost w-full text-xs" onClick={() => confirm('¿Vaciar el cotizador?') && clear()}>Vaciar cotizador</button>
@@ -152,6 +184,17 @@ export default function Cotizador() {
             <div className="mt-1 flex justify-between text-slate-500"><span>{r.financiado ? `Entrega ${porc}% + ${cuotas} cuotas` : 'Contado'}</span><span>{r.financiado ? `${pesos(r.entrega)} + ${pesos(r.cuota)}` : ''}</span></div>
           </div>
           <button className="btn-primary w-full" onClick={guardar} disabled={busy}>{busy ? 'Guardando…' : 'Confirmar pedido'}</button>
+        </div>
+      </Modal>
+      <Modal open={compartirOpen} onClose={() => setCompartirOpen(false)} title="Compartir presupuesto">
+        <div className="space-y-4">
+          <div><label className="label">Cliente (opcional)</label><input className="input" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre del cliente" /></div>
+          <p className="text-sm text-slate-500">Se genera un PDF con los productos, códigos, precios de lista, la forma de pago elegida, la tabla de todos los planes y tus datos de vendedor.</p>
+          <button className="btn-primary w-full" onClick={compartirPdf} disabled={pdfBusy}><Share2 size={17} /> {pdfBusy ? 'Generando…' : 'Compartir PDF'}</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-secondary" onClick={bajarPdf} disabled={pdfBusy}><FileDown size={17} /> Descargar</button>
+            <button className="btn-secondary" onClick={compartirTexto}><MessageCircle size={17} /> Solo texto</button>
+          </div>
         </div>
       </Modal>
       <Toast msg={toast.msg} kind={toast.kind} />
