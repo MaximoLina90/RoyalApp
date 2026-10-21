@@ -4,8 +4,8 @@ export const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() 
 export const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 export const EVENTO_COLOR: Record<string, string> = {
   Demo: 'bg-royal-600 text-white', Entrevista: 'bg-amber-500 text-white', 'Capacitación': 'bg-emerald-600 text-white',
-  Servicio: 'bg-coral-500 text-white', Otro: 'bg-slate-500 text-white',
+  Servicio: 'bg-coral-500 text-white', Extracurricular: 'bg-violet-600 text-white', Otro: 'bg-slate-500 text-white',
 };
 export const EVENTO_DOT: Record<string, string> = {
-  Demo: 'bg-royal-600', Entrevista: 'bg-amber-500', 'Capacitación': 'bg-emerald-600', Servicio: 'bg-coral-500', Otro: 'bg-slate-500',
+  Demo: 'bg-royal-600', Entrevista: 'bg-amber-500', 'Capacitación': 'bg-emerald-600', Servicio: 'bg-coral-500', Extracurricular: 'bg-violet-600', Otro: 'bg-slate-500',
 };

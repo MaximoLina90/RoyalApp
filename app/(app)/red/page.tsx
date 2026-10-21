@@ -6,9 +6,10 @@ import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Modal, Spinner, Toast, Empty } from '@/components/ui';
 import { useToast } from '@/components/useToast';
 import { arbol, rama, esLider, etiquetaEquipo } from '@/lib/red';
+import Objetivos, { PuestosVendedor } from '@/components/Objetivos';
 import type { Nodo, Profile, Dispositivo, Acceso } from '@/lib/types';
 
-type Tab = 'estructura' | 'pendientes' | 'alertas';
+type Tab = 'estructura' | 'objetivos' | 'pendientes' | 'alertas';
 const fh = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 async function apiPost(path: string, body: object) {
@@ -137,8 +138,8 @@ export default function Red() {
       <PageHeader title="Mi red" subtitle={`${enRed.size - (esAdmin ? 0 : 1)} códigos en tu estructura · ${lideres.length} líderes`}
         action={<button className="btn-primary" onClick={() => setAlta({ superior: mio ?? lideres[0]?.codigo ?? '', lineas: '' })}><UserPlus size={18} /> Cargar códigos</button>} />
 
-      <div className="mb-5 flex max-w-lg gap-1 rounded-xl bg-slate-200/60 p-1">
-        {([['estructura', 'Estructura'], ['pendientes', 'Por aprobar'], ['alertas', 'Alertas']] as [Tab, string][]).map(([k, l]) => (
+      <div className="mb-5 flex max-w-2xl gap-1 overflow-x-auto rounded-xl bg-slate-200/60 p-1">
+        {([['estructura', 'Estructura'], ['objetivos', 'Objetivos'], ['pendientes', 'Por aprobar'], ['alertas', 'Alertas']] as [Tab, string][]).map(([k, l]) => (
           <button key={k} className={`seg ${tab === k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(k)}>{l}
             {k === 'pendientes' && pendientes.length > 0 && <span className="ml-1.5 rounded-full bg-coral-500 px-1.5 text-[10px] font-bold text-white">{pendientes.length}</span>}
             {k === 'alertas' && alertas.length > 0 && <span className="ml-1.5 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{alertas.length}</span>}
@@ -183,6 +184,8 @@ export default function Red() {
           })}
         </div>
       </>)}
+
+      {tab === 'objetivos' && <Objetivos />}
 
       {tab === 'pendientes' && (pendientes.length === 0 ? <Empty icon={<Check size={30} />} title="No hay cuentas por aprobar" text="Acá aparecen los vendedores de tu red que ya verificaron su celular." /> : (
         <div className="space-y-5">
@@ -238,6 +241,7 @@ export default function Red() {
                   <button className="btn-ghost text-coral-600" onClick={() => borrarCuenta(pDet)}><Trash2 size={16} /> Borrar cuenta</button>
                 </div>
               )}
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="label">Puesto en desafíos vigentes</p><PuestosVendedor uid={pDet.id} /></div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="label">Dispositivos ({disps.filter((d) => d.usuario_id === pDet.id && d.verificado_at && !d.revocado).length}/{pDet.max_dispositivos})</p>
