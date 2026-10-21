@@ -47,7 +47,7 @@ export default function Objetivos() {
     const p = PRESETS[form.preset];
     const t = TIPOS.find((x) => x.k === form.tipo)!;
     const row = form.modo === 'meta'
-      ? { modo: 'meta', tipos: [form.tipo], metrica: 'cantidad', cantidad: form.cantidad, titulo: form.titulo.trim() || `${form.cantidad} ${t.plural}` }
+      ? { modo: 'meta', tipos: t.tipos, metrica: 'cantidad', cantidad: form.cantidad, titulo: form.titulo.trim() || `${form.cantidad} ${t.plural}` }
       : { modo: 'competencia', tipos: p.tipos, metrica: p.metrica, cantidad: null, titulo: form.titulo.trim() || p.titulo };
     const { error } = await supabase.from('objetivos').insert({ ...row, premio: form.premio, alcance: form.alcance, desde: form.desde, hasta: form.hasta });
     setBusy(false);
