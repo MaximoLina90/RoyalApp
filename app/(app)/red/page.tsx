@@ -185,18 +185,29 @@ export default function Red() {
       </>)}
 
       {tab === 'pendientes' && (pendientes.length === 0 ? <Empty icon={<Check size={30} />} title="No hay cuentas por aprobar" text="Acá aparecen los vendedores de tu red que ya verificaron su celular." /> : (
-        <div className="card divide-y divide-slate-100">
-          {pendientes.map((p) => {
-            const n = nodos.find((x) => x.codigo === p.codigo_vendedor);
-            return (
-              <div key={p.id} className="flex flex-wrap items-center gap-3 p-4">
-                <div className="min-w-0 flex-1"><p className="font-medium">{p.nombre} <span className="font-mono text-xs text-royal-600">{p.codigo_vendedor}</span></p>
-                  <p className="text-xs text-slate-500">{p.email} · {p.celular} ✓ · Superior: {nodos.find((x) => x.codigo === n?.superior)?.nombre ?? '—'}</p></div>
-                <button className="btn-primary px-3 py-1.5" onClick={() => actualizarPerfil(p, { aprobado: true }, 'Cuenta aprobada')}><Check size={15} /> Aprobar</button>
-                <button className="btn-ghost px-3 py-1.5 text-coral-600" onClick={() => borrarCuenta(p)}><X size={15} /> Rechazar</button>
+        <div className="space-y-5">
+          {[{ t: 'Te corresponde aprobar', d: 'Dependen directamente de vos.', l: pendientes.filter((p) => nodos.find((x) => x.codigo === p.codigo_vendedor)?.superior === mio) },
+            { t: 'Resto de tu red', d: 'Las aprueba su líder directo, pero podés aprobarlas vos si hace falta.', l: pendientes.filter((p) => nodos.find((x) => x.codigo === p.codigo_vendedor)?.superior !== mio) }]
+            .filter((g) => g.l.length > 0).map((g) => (
+            <div key={g.t}>
+              <p className="font-bold text-royal-900">{g.t} <span className="text-slate-400">({g.l.length})</span></p>
+              <p className="mb-2 text-xs text-slate-500">{g.d}</p>
+              <div className="card divide-y divide-slate-100">
+                {g.l.map((p) => {
+                  const n = nodos.find((x) => x.codigo === p.codigo_vendedor);
+                  const resp = nodos.find((x) => x.codigo === n?.superior);
+                  return (
+                    <div key={p.id} className="flex flex-wrap items-center gap-3 p-4">
+                      <div className="min-w-0 flex-1"><p className="font-medium">{p.nombre} <span className="font-mono text-xs text-royal-600">{p.codigo_vendedor}</span></p>
+                        <p className="text-xs text-slate-500">{p.email} · {p.celular} ✓ · Responsable: {resp ? `${resp.nombre} (${resp.codigo})` : '—'}</p></div>
+                      <button className="btn-primary px-3 py-1.5" onClick={() => actualizarPerfil(p, { aprobado: true }, 'Cuenta aprobada')}><Check size={15} /> Aprobar</button>
+                      <button className="btn-ghost px-3 py-1.5 text-coral-600" onClick={() => borrarCuenta(p)}><X size={15} /> Rechazar</button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       ))}
 
