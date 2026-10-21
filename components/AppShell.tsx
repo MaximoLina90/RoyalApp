@@ -14,6 +14,7 @@ const NAV = [
   { href: '/', label: 'Inicio', icon: Home },
   { href: '/catalogo', label: 'Catálogo', icon: BookOpen },
   { href: '/cotizador', label: 'Cotizador', icon: Calculator },
+  { href: '/recetas', label: 'Recetas Royal', icon: ChefHat, soloMenu: true },
   { href: '/cronograma', label: 'Agenda', icon: CalendarDays },
   { href: '/estadisticas', label: 'Ventas', icon: BarChart3 },
 ];
@@ -22,7 +23,6 @@ const EXTRA = [
   { href: '/objetivos', label: 'Objetivos', icon: Target },
   { href: '/ventas', label: 'Mis pedidos', icon: Receipt },
   { href: '/marketplace', label: 'Marketplace', icon: Store },
-  { href: '/recetas', label: 'Recetas Royal', icon: ChefHat },
   { href: '/capacitacion', label: 'Capacitación', icon: GraduationCap },
 ];
 
@@ -99,7 +99,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <button onClick={() => setMenu(false)} className="rounded-full p-1.5 hover:bg-white/10" aria-label="Cerrar"><X size={20} /></button>
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-              {[...((lider || profile.rol === 'admin') ? [{ href: '/red', label: 'Mi red', icon: Network }] : []), ...EXTRA, ...(profile.rol === 'admin' ? [{ href: '/admin', label: 'Administración', icon: Settings }] : [])].map(({ href, label, icon: Icon }) => (
+              {[...NAV.filter((n) => n.soloMenu), ...((lider || profile.rol === 'admin') ? [{ href: '/red', label: 'Mi red', icon: Network }] : []), ...EXTRA, ...(profile.rol === 'admin' ? [{ href: '/admin', label: 'Administración', icon: Settings }] : [])].map(({ href, label, icon: Icon }) => (
                 <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${path.startsWith(href) ? 'bg-royal-50 text-royal-700' : 'text-slate-700 hover:bg-slate-50'}`}><Icon size={20} /> {label}</Link>
               ))}
             </nav>
@@ -112,7 +112,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom nav mobile */}
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
-        {NAV.map(({ href, label, icon: Icon }) => (
+        {NAV.filter((n) => !n.soloMenu).map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${active(href) ? 'text-royal-600' : 'text-slate-500'}`}>
             <Icon size={22} strokeWidth={active(href) ? 2.4 : 1.8} />{label}
             {href === '/cotizador' && count > 0 && <span className="absolute right-[22%] top-1.5 rounded-full bg-coral-500 px-1.5 text-[10px] font-bold text-white">{count}</span>}
