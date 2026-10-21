@@ -10,8 +10,9 @@ import { useToast } from '@/components/useToast';
 import { pesos } from '@/lib/format';
 import { PLANES, DEFAULT_FACTORES } from '@/lib/cotizador';
 import type { Producto } from '@/lib/types';
+import RevisarMedios from '@/components/RevisarMedios';
 
-type Tab = 'productos' | 'cuotas';
+type Tab = 'productos' | 'fotos' | 'cuotas';
 const nuevo = (cat: number): Partial<Producto> => ({ nombre: '', codigo: '', descripcion: '', precio: 0, categoria_id: cat, activo: true, orden: 99, imagen_url: null });
 
 export default function Admin() {
@@ -58,7 +59,7 @@ export default function Admin() {
     <div>
       <PageHeader title="Administración" subtitle="Productos, precios y plan de cuotas. El equipo se gestiona en Mi red." />
       <div className="mb-5 flex max-w-md gap-1 rounded-xl bg-slate-200/60 p-1">
-        {([['productos', 'Productos'], ['cuotas', 'Cuotas']] as [Tab, string][]).map(([k, l]) => <button key={k} className={`seg ${tab === k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(k)}>{l}</button>)}
+        {([['productos', 'Productos'], ['fotos', 'Fotos y videos'], ['cuotas', 'Cuotas']] as [Tab, string][]).map(([k, l]) => <button key={k} className={`seg ${tab === k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(k)}>{l}</button>)}
       </div>
 
       {tab === 'productos' && (loading ? <Spinner /> : (<>
@@ -82,6 +83,8 @@ export default function Admin() {
           </table>
         </div>
       </>))}
+
+      {tab === 'fotos' && <RevisarMedios productos={productos} onCambio={reload} toast={toast.show} />}
 
       {tab === 'cuotas' && (
         <div className="grid max-w-3xl gap-5 md:grid-cols-2">

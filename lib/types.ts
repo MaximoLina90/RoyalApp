@@ -21,3 +21,6 @@ export interface Posicion { usuario_id: string; nombre: string; codigo: string |
 export interface Video { id: string; titulo: string; descripcion: string | null; url: string; categoria: string | null; idioma: 'es' | 'sub'; tipo: 'video' | 'podcast' | 'lectura'; fuente: string | null; orden: number; activo: boolean; created_at: string }
 export interface CategoriaCap { slug: string; nombre: string; emoji: string | null; orden: number; especial?: boolean; insignia?: string | null; descripcion?: string | null }
 export interface PendienteCap { id: string; categoria: string | null; titulo: string; accion: 'subtitular' | 'traducir' | 'grabar' | 'resumir' | 'enlazar'; fuente: string | null; url: string | null; nota: string | null; hecho: boolean }
+
+export type EstadoMedio = 'verificada' | 'revisar' | 'aprobada' | 'rechazada';
+export interface ProductoMedio { id: string; producto_id: number; tipo: 'foto' | 'video' | 'youtube'; url: string; fuente_url: string | null; pagina: string | null; archivo_original: string | null; estado: EstadoMedio; evidencia: string | null; principal: boolean; orden: number; revisado_at: string | null }
