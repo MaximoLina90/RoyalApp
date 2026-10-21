@@ -5,13 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner, Toast } from '@/components/ui';
 import { useToast } from '@/components/useToast';
+import TestLectura from '@/components/TestLectura';
 import type { Video, CategoriaCap, PendienteCap } from '@/lib/types';
 
 type Tipo = Video['tipo'];
 const TIPO_TXT: Record<Tipo, { plural: string; vacio: string; hecho: string; accion: string }> = {
   video: { plural: 'videos', vacio: 'Todavía no hay videos.', hecho: 'Ya completaste este video.', accion: 'Miralo hasta el final para que cuente en tus objetivos.' },
   podcast: { plural: 'podcasts', vacio: 'Todavía no hay podcasts.', hecho: 'Ya escuchaste este episodio.', accion: 'Escuchalo hasta el final para que cuente en tus objetivos.' },
-  lectura: { plural: 'lecturas', vacio: 'Pronto vas a encontrar acá libros traducidos y material para leer.', hecho: 'Ya leíste este material.', accion: 'Cuando lo termines, marcalo como leído.' },
+  lectura: { plural: 'lecturas', vacio: 'Pronto vas a encontrar acá libros traducidos y material para leer.', hecho: 'Ya leíste este material.', accion: 'Cuando lo termines, marcalo como leído (si tiene test, aprobalo para que cuente).' },
 };
 const spotifyEmbed = (url: string) => { const m = url.match(/open\.spotify\.com\/(?:embed\/)?(episode|show)\/([\w]+)/); return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : null; };
 const ytId = (url: string) => url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/)?.[1] ?? null;
@@ -80,15 +81,19 @@ export default function Capacitacion() {
   const [filtro, setFiltro] = useState<string>('');
   const [ver, setVer] = useState<Video | null>(null);
   const [form, setForm] = useState<(typeof vacio & { id?: string }) | null>(null);
+  const [conTest, setConTest] = useState<Set<string>>(new Set());
+  const [test, setTest] = useState<Video | null>(null);
   const [pform, setPform] = useState<(typeof pendVacio & { id?: string }) | null>(null);
 
   const cargar = useCallback(async () => {
-    const [{ data: v }, { data: vv }, { data: c }, { data: pe }] = await Promise.all([
+    const [{ data: v }, { data: vv }, { data: c }, { data: pe }, { data: ct }] = await Promise.all([
       supabase.from('capacitacion_videos').select('*').order('orden').order('created_at'),
       supabase.from('videos_vistos').select('video_id').eq('usuario_id', profile!.id),
       supabase.from('capacitacion_categorias').select('*').order('orden'),
       esAdmin ? supabase.from('capacitacion_pendientes').select('*').order('created_at') : Promise.resolve({ data: [] }),
+      supabase.rpc('materiales_con_test'),
     ]);
+    setConTest(new Set(((ct as unknown as (string | { materiales_con_test: string })[]) ?? []).map((x) => (typeof x === 'string' ? x : x.materiales_con_test))));
     setVideos((v as Video[]) ?? []); setCats((c as CategoriaCap[]) ?? []); setPend((pe as PendienteCap[]) ?? []);
     setVistos(new Set(((vv as { video_id: string }[]) ?? []).map((x) => x.video_id)));
   }, [profile, esAdmin]);
@@ -268,7 +273,11 @@ export default function Capacitacion() {
       <Modal open={!!ver} onClose={() => setVer(null)} title={ver?.titulo ?? ''} wide>
         {ver && (<div><Reproductor v={ver} onFin={() => terminar(ver)} />
           <p className="mt-3 text-sm text-slate-500">{vistos.has(ver.id) ? `✅ ${TIPO_TXT[ver.tipo ?? 'video'].hecho}` : TIPO_TXT[ver.tipo ?? 'video'].accion}{ver.idioma === 'sub' ? ' Si no ves los subtítulos, tocá CC en el reproductor.' : ''}</p>
-          {!vistos.has(ver.id) && (ver.tipo === 'lectura' || spotifyEmbed(ver.url)) && <button className="btn-primary mt-3" onClick={() => terminar(ver)}><CheckCircle2 size={16} /> {ver.tipo === 'lectura' ? 'Marcar como leído' : 'Marcar como escuchado'}</button>}</div>)}
+          {!vistos.has(ver.id) && conTest.has(ver.id) && <button className="btn-primary mt-3" onClick={() => setTest(ver)}><ClipboardList size={16} /> Ya lo leí: hacer el test</button>}
+          {!vistos.has(ver.id) && !conTest.has(ver.id) && (ver.tipo === 'lectura' || spotifyEmbed(ver.url)) && <button className="btn-primary mt-3" onClick={() => terminar(ver)}><CheckCircle2 size={16} /> {ver.tipo === 'lectura' ? 'Marcar como leído' : 'Marcar como escuchado'}</button>}</div>)}
+      </Modal>
+      <Modal open={!!test} onClose={() => setTest(null)} title={test ? `Test: ${test.titulo}` : ''} wide>
+        {test && <TestLectura videoId={test.id} titulo={test.titulo} onAprobado={() => { const nuevos = new Set([...vistos, test.id]); setVistos(nuevos); toast.show('📚 ¡Test aprobado! Lectura completada'); }} />}
       </Modal>
       <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Editar material' : 'Agregar material'}>
         {form && (
