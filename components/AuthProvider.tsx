@@ -19,9 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => { setSession(data.session); await loadProfile(data.session); setLoading(false); });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => { setSession(s); loadProfile(s); });
-    return () => sub.subscription.unsubscribe();
+    let listo = false;
+    const fin = () => { if (!listo) { listo = true; setLoading(false); } };
+    // Red de seguridad: nunca quedar cargando para siempre
+    const t = setTimeout(fin, 8000);
+    supabase.auth.getSession().then(async ({ data }) => { setSession(data.session); await loadProfile(data.session); }).catch(() => {}).finally(fin);
+    // Importante: no llamar a Supabase dentro del callback (bloquea el lock de auth y la app queda colgada)
+    const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
+      setSession(s);
+      if (e === 'TOKEN_REFRESHED') return;
+      setTimeout(() => { loadProfile(s).catch(() => {}); }, 0);
+    });
+    return () => { clearTimeout(t); sub.subscription.unsubscribe(); };
   }, [loadProfile]);
 
   const refresh = async () => { const { data } = await supabase.auth.getSession(); setSession(data.session); await loadProfile(data.session); };

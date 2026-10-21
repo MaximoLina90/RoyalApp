@@ -27,8 +27,14 @@ export default function DeviceGate({ children }: { children: ReactNode }) {
   const [err, setErr] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const { data, error } = await supabase.rpc('estado_dispositivo');
-    setSt(error ? { estado: 'pendiente' } : (data as Estado));
+    for (let i = 0; i < 3; i++) {
+      const r = await Promise.race([
+        supabase.rpc('estado_dispositivo'),
+        new Promise<null>((ok) => setTimeout(() => ok(null), 8000)),
+      ]);
+      if (r && !r.error) { setSt(r.data as Estado); return; }
+    }
+    setSt({ estado: 'pendiente' });
   }, []);
 
   useEffect(() => {
