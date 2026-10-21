@@ -149,8 +149,8 @@ export default function Objetivos() {
         {form && (
           <form onSubmit={crear} className="space-y-4">
             <div className="flex gap-1 rounded-xl bg-slate-200/60 p-1">
-              <button type="button" className={`seg ${form.modo === 'meta' ? 'seg-on' : 'seg-off'}`} onClick={() => setForm({ ...form, modo: 'meta' })}><Target size={15} /> Meta</button>
-              <button type="button" className={`seg ${form.modo === 'competencia' ? 'seg-on' : 'seg-off'}`} onClick={() => setForm({ ...form, modo: 'competencia' })}><Trophy size={15} /> Competencia</button>
+              <button type="button" className={`seg gap-2 py-2.5 text-base ${form.modo === 'meta' ? 'seg-on' : 'seg-off'}`} onClick={() => setForm({ ...form, modo: 'meta' })}><span className="grid h-9 w-9 place-items-center rounded-full bg-red-50 ring-1 ring-red-100"><Target size={22} className="text-red-500" strokeWidth={2.4} /></span> Meta</button>
+              <button type="button" className={`seg gap-2 py-2.5 text-base ${form.modo === 'competencia' ? 'seg-on' : 'seg-off'}`} onClick={() => setForm({ ...form, modo: 'competencia' })}><span className="grid h-9 w-9 place-items-center rounded-full bg-amber-50 ring-1 ring-amber-100"><Trophy size={22} className="text-amber-500" strokeWidth={2.4} /></span> Competencia</button>
             </div>
             {form.modo === 'meta' ? (<>
               <div><label className="label">Cantidad</label>
