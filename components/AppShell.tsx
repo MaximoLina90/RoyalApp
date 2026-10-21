@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, ReactNode } from 'react';
-import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt, ChefHat, GraduationCap, Store, Menu, X, Network, Target } from 'lucide-react';
+import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt, ChefHat, GraduationCap, Store, Menu, X, Network, Target, Megaphone } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useCart } from './CartProvider';
 import { Spinner } from './ui';
@@ -22,6 +22,7 @@ const NAV = [
 const EXTRA = [
   { href: '/objetivos', label: 'Objetivos', icon: Target },
   { href: '/ventas', label: 'Mis pedidos', icon: Receipt },
+  { href: '/publicidad', label: 'Publicidad', icon: Megaphone },
   { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/capacitacion', label: 'Capacitación', icon: GraduationCap },
 ];

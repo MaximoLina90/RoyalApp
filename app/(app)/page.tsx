@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BookOpen, Calculator, CalendarDays, BarChart3, Receipt, Store, ChefHat, GraduationCap, ArrowRight, MapPin, Clock } from 'lucide-react';
+import { BookOpen, Calculator, CalendarDays, BarChart3, Receipt, Store, ChefHat, GraduationCap, ArrowRight, MapPin, Clock, Megaphone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { pesos, hoyISO, EVENTO_COLOR } from '@/lib/format';
@@ -15,8 +15,9 @@ const ACCESOS = [
   { href: '/estadisticas', label: 'Estadísticas', text: 'Tus resultados', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
   { href: '/ventas', label: 'Mis pedidos', text: 'Historial de ventas', icon: Receipt, color: 'from-sky-500 to-blue-700' },
   { href: '/marketplace', label: 'Marketplace', text: 'Accesorios, insumos y más', icon: Store, color: 'from-violet-500 to-purple-700' },
+  { href: '/publicidad', label: 'Publicidad', text: 'Flyers y videos para compartir', icon: Megaphone, color: 'from-fuchsia-500 to-pink-600' },
   { href: '/recetas', label: 'Recetas Royal', text: 'Próximamente', icon: ChefHat, color: 'from-rose-500 to-red-600' },
-  { href: '/capacitacion', label: 'Capacitación', text: 'Próximamente', icon: GraduationCap, color: 'from-teal-500 to-cyan-700' },
+  { href: '/capacitacion', label: 'Capacitación', text: 'Videos, podcasts y lecturas', icon: GraduationCap, color: 'from-teal-500 to-cyan-700' },
 ];
 
 export default function Inicio() {
