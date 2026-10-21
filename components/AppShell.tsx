@@ -7,6 +7,7 @@ import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, 
 import { useAuth } from './AuthProvider';
 import { useCart } from './CartProvider';
 import { Spinner } from './ui';
+import DeviceGate from './DeviceGate';
 
 const NAV = [
   { href: '/', label: 'Inicio', icon: Home },
@@ -43,6 +44,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const salir = async () => { if (confirm('¿Deseás cerrar la sesión?')) { await signOut(); router.replace('/login'); } };
 
   return (
+    <DeviceGate>
     <div className="min-h-screen md:flex">
       {/* Sidebar desktop */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-gradient-to-b from-royal-700 to-royal-900 text-white md:flex">
@@ -111,5 +113,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
         ))}
       </nav>
     </div>
+    </DeviceGate>
   );
 }

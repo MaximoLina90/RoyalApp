@@ -35,7 +35,7 @@ export default function Cotizador() {
     ...items.map((i) => `• ${i.cantidad} x ${i.nombre} — ${pesos(i.precio * i.cantidad)}`), '',
     `Total: ${pesos(r.total)}`,
     ...(r.financiado ? [`Entrega (${porc}%): ${pesos(r.entrega)}`, `${cuotas} cuotas de ${pesos(r.cuota)}`, `Equivale a ${pesos(r.diario)} por día`] : ['Pago de contado']),
-    '', `Vendedor: ${profile?.nombre}${profile?.celular ? ' · ' + profile.celular : ''}`,
+    '', `Vendedor: ${profile?.nombre}${profile?.codigo_vendedor ? ' (Cód. ' + profile.codigo_vendedor + ')' : ''}${profile?.celular ? ' · ' + profile.celular : ''}`, 'Royal Prestige®',
   ].join('\n');
 
   const compartir = async () => {
