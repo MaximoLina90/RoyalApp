@@ -200,3 +200,29 @@ select v.* from (values
 ('Cómo usar el pensamiento positivo para cambiar tu vida (Brian Tracy)','https://www.youtube.com/watch?v=a-PL-8e04wY','motivacion','es',25,'Brian Tracy')
 ) as v(titulo,url,categoria,idioma,orden,fuente)
 where not exists (select 1 from public.capacitacion_videos x where x.url = v.url);
+
+-- Tipos de material: video, podcast, lectura
+alter table public.capacitacion_videos add column if not exists tipo text not null default 'video';
+do $$ begin if not exists (select 1 from pg_constraint where conname='capacitacion_videos_tipo_chk') then
+  alter table public.capacitacion_videos add constraint capacitacion_videos_tipo_chk check (tipo in ('video','podcast','lectura')); end if; end $$;
+insert into public.capacitacion_videos (titulo,url,categoria,idioma,tipo,orden)
+select v.* from (values
+('Máquina de Ventas #1: el primer error para vender mejor','https://www.youtube.com/watch?v=mjrHBxhW8gc','cierre','es','podcast',100),
+('Máquina de Ventas #137: buen vendedor sin haber nacido para vender','https://www.youtube.com/watch?v=-XBHHKGBg3E','cierre','es','podcast',101),
+('Alex Dey: 30 años de experiencia en ventas en 1 hora (Sinergéticos)','https://www.youtube.com/watch?v=-i3F3q1qHuY','cierre','es','podcast',102),
+('Alex Dey: cómo vender y vivir la vida que soñaste (Compuestos)','https://www.youtube.com/watch?v=d-mtITi8iTM','cierre','es','podcast',103),
+('Margarita Pasos: vender más entendiendo la mente del cliente','https://www.youtube.com/watch?v=8DfxGeWsZ7c','cierre','es','podcast',104),
+('Máquina de Ventas #48: cómo tratar el "dolor" del prospecto','https://www.youtube.com/watch?v=a733-U_0mko','objeciones','es','podcast',105),
+('Máquina de Ventas #112: speech comercial poderoso','https://www.youtube.com/watch?v=SAjGVTa44yo','setting','es','podcast',106),
+('Máquina de Ventas #114: rutas de prospección','https://www.youtube.com/watch?v=uJmbWD5Ywlk','prospeccion','es','podcast',107),
+('Máquina de Ventas #94: la rutina del vendedor exitoso','https://www.youtube.com/watch?v=WcR37SbbLMs','tiempo','es','podcast',108),
+('Ojalá lo hubiera sabido antes: domina tu tiempo','https://www.youtube.com/watch?v=8FThFjrToWY','tiempo','es','podcast',109),
+('Ojalá lo hubiera sabido antes: la gestión del tiempo','https://www.youtube.com/watch?v=Sf9hwmWNwFk','tiempo','es','podcast',110),
+('De buen vendedor a gran líder comercial (Dan Macías)','https://www.youtube.com/watch?v=pk6AUaUabLw','liderazgo','es','podcast',111),
+('Elena Espinal: los grandes líderes orquestan estados de ánimo','https://www.youtube.com/watch?v=2rzlu699j4k','liderazgo','es','podcast',112),
+('Moris Dieck: cómo manejar tu dinero (Compuestos)','https://www.youtube.com/watch?v=qEGtimQA-iU','finanzas','es','podcast',113),
+('Lo que nadie nos enseñó sobre dinero (Se Regalan Dudas)','https://www.youtube.com/watch?v=uFRc9Ei9FYc','finanzas','es','podcast',114),
+('Ojalá lo hubiera sabido antes: 9 consejos que cambian la vida','https://www.youtube.com/watch?v=mee9ZUrbCAQ','desarrollo','es','podcast',115),
+('Upselling: vender más y fidelizar mejor (Conversando de ventas)','https://www.youtube.com/watch?v=x3gJ3dhECpw','servicio','es','podcast',116)
+) as v(titulo,url,categoria,idioma,tipo,orden)
+where not exists (select 1 from public.capacitacion_videos x where x.url = v.url);

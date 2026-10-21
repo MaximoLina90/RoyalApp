@@ -1,14 +1,21 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Award, Lock, GraduationCap, Plus, Pencil, Trash2, CheckCircle2, PlayCircle, LayoutDashboard, ListVideo, ClipboardList, Subtitles, Circle } from 'lucide-react';
+import { Award, Lock, GraduationCap, Plus, Pencil, Trash2, CheckCircle2, PlayCircle, LayoutDashboard, ListVideo, Headphones, BookOpen, ClipboardList, Subtitles, Circle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner, Toast } from '@/components/ui';
 import { useToast } from '@/components/useToast';
 import type { Video, CategoriaCap, PendienteCap } from '@/lib/types';
 
+type Tipo = Video['tipo'];
+const TIPO_TXT: Record<Tipo, { plural: string; vacio: string; hecho: string; accion: string }> = {
+  video: { plural: 'videos', vacio: 'Todavía no hay videos.', hecho: 'Ya completaste este video.', accion: 'Miralo hasta el final para que cuente en tus objetivos.' },
+  podcast: { plural: 'podcasts', vacio: 'Todavía no hay podcasts.', hecho: 'Ya escuchaste este episodio.', accion: 'Escuchalo hasta el final para que cuente en tus objetivos.' },
+  lectura: { plural: 'lecturas', vacio: 'Pronto vas a encontrar acá libros traducidos y material para leer.', hecho: 'Ya leíste este material.', accion: 'Cuando lo termines, marcalo como leído.' },
+};
+const spotifyEmbed = (url: string) => { const m = url.match(/open\.spotify\.com\/(?:embed\/)?(episode|show)\/([\w]+)/); return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : null; };
 const ytId = (url: string) => url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/)?.[1] ?? null;
-const vacio = { titulo: '', descripcion: '', url: '', categoria: '', idioma: 'es' as 'es' | 'sub', orden: 0, activo: true };
+const vacio = { titulo: '', descripcion: '', url: '', categoria: '', idioma: 'es' as 'es' | 'sub', tipo: 'video' as Video['tipo'], orden: 0, activo: true };
 const ACCIONES: Record<PendienteCap['accion'], { l: string; c: string }> = {
   subtitular: { l: 'Subtitular', c: 'bg-sky-100 text-sky-700' }, traducir: { l: 'Traducir', c: 'bg-violet-100 text-violet-700' },
   grabar: { l: 'Grabar', c: 'bg-rose-100 text-rose-700' }, resumir: { l: 'Resumir', c: 'bg-amber-100 text-amber-700' }, enlazar: { l: 'Enlazar curso', c: 'bg-emerald-100 text-emerald-700' },
@@ -38,9 +45,12 @@ function Reproductor({ v, onFin }: { v: Video; onFin: () => void }) {
     });
     return () => { vivo = false; player?.destroy(); };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sp = !id ? spotifyEmbed(v.url) : null;
+  if (v.tipo === 'lectura' && !id) return <iframe src={v.url} className="h-[70vh] w-full rounded-2xl border" title={v.titulo} />;
+  if (sp) return <iframe src={sp} className="h-[232px] w-full rounded-2xl" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" title={v.titulo} />;
   return (
     <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
-      {id ? <div ref={ref} className="h-full w-full" /> : <video src={v.url} controls autoPlay className="h-full w-full" onEnded={onFin} />}
+      {id ? <div ref={ref} className="h-full w-full" /> : v.tipo === 'podcast' ? <audio src={v.url} controls autoPlay className="mt-[25%] w-full" onEnded={onFin} /> : <video src={v.url} controls autoPlay className="h-full w-full" onEnded={onFin} />}
     </div>
   );
 }
@@ -66,7 +76,7 @@ export default function Capacitacion() {
   const [cats, setCats] = useState<CategoriaCap[]>([]);
   const [pend, setPend] = useState<PendienteCap[]>([]);
   const [vistos, setVistos] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<'tablero' | 'videos' | 'contenido'>('tablero');
+  const [tab, setTab] = useState<'tablero' | Tipo | 'contenido'>('tablero');
   const [filtro, setFiltro] = useState<string>('');
   const [ver, setVer] = useState<Video | null>(null);
   const [form, setForm] = useState<(typeof vacio & { id?: string }) | null>(null);
@@ -123,31 +133,33 @@ export default function Capacitacion() {
   const pct = activos.length ? Math.round((totalOk / activos.length) * 100) : 0;
   const completas = statsCat.filter((s) => s.total > 0 && s.ok === s.total).length;
   const conVideos = statsCat.filter((s) => s.total > 0).length;
-  const abrirCat = (slug: string) => { setFiltro(slug); setTab('videos'); };
+  const abrirCat = (slug: string) => { setFiltro(slug); setTab(deCat(slug, activos).some((v) => v.tipo === 'video') ? 'video' : deCat(slug, activos)[0]?.tipo ?? 'video'); };
 
-  type Tab = 'tablero' | 'videos' | 'contenido';
+  type Tab = 'tablero' | Tipo | 'contenido';
   const tabs: { k: Tab; l: string; i: JSX.Element }[] = [
     { k: 'tablero', l: 'Mi avance', i: <LayoutDashboard size={16} /> },
-    { k: 'videos', l: 'Videos', i: <ListVideo size={16} /> },
+    { k: 'video', l: 'Videos', i: <ListVideo size={16} /> },
+    { k: 'podcast', l: 'Podcasts', i: <Headphones size={16} /> },
+    { k: 'lectura', l: 'Lecturas', i: <BookOpen size={16} /> },
     ...(esAdmin ? [{ k: 'contenido' as Tab, l: 'Contenido', i: <ClipboardList size={16} /> }] : []),
   ];
 
   return (
     <div>
       <PageHeader title="Capacitación" subtitle={activos.length ? `Completaste ${pct}% del material` : 'Material de formación para el equipo'}
-        action={esAdmin ? <button className="btn-primary" onClick={() => setForm({ ...vacio, categoria: filtro })}><Plus size={18} /> Agregar video</button> : undefined} />
-      <div className="mb-5 flex max-w-md gap-1 rounded-xl bg-slate-200/60 p-1">
-        {tabs.map((t) => <button key={t.k} className={`seg ${tab === t.k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(t.k)}>{t.i} {t.l}</button>)}
+        action={esAdmin ? <button className="btn-primary" onClick={() => setForm({ ...vacio, categoria: filtro, tipo: tab === 'podcast' || tab === 'lectura' ? tab : 'video' })}><Plus size={18} /> Agregar material</button> : undefined} />
+      <div className="mb-5 flex max-w-3xl gap-1 overflow-x-auto rounded-xl bg-slate-200/60 p-1">
+        {tabs.map((t) => <button key={t.k} className={`seg whitespace-nowrap ${tab === t.k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(t.k)}>{t.i} {t.l}</button>)}
       </div>
 
-      {tab === 'tablero' && (activos.length === 0 ? <Empty icon={<GraduationCap size={30} />} title="Próximamente" text="Acá vas a encontrar los videos de capacitación." /> : (
+      {tab === 'tablero' && (activos.length === 0 ? <Empty icon={<GraduationCap size={30} />} title="Próximamente" text="Acá vas a encontrar el material de capacitación." /> : (
         <div className="space-y-5">
           <div className="card flex flex-col items-center gap-5 p-6 sm:flex-row">
             <Anillo pct={pct} />
             <div className="flex-1 text-center sm:text-left">
               <p className="text-lg font-bold text-royal-900">{pct === 100 ? '¡Completaste toda la capacitación! 🏆' : pct >= 50 ? '¡Vas muy bien, seguí así! 🚀' : pct > 0 ? 'Buen comienzo, cada video suma 💪' : 'Empezá por la categoría que más te sirva hoy 👇'}</p>
               <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-slate-50 p-3"><p className="text-xl font-extrabold text-royal-900">{totalOk}/{activos.length}</p><p className="text-xs text-slate-500">videos vistos</p></div>
+                <div className="rounded-xl bg-slate-50 p-3"><p className="text-xl font-extrabold text-royal-900">{totalOk}/{activos.length}</p><p className="text-xs text-slate-500">contenidos completados</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xl font-extrabold text-royal-900">{completas}/{conVideos}</p><p className="text-xs text-slate-500">categorías completas</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xl font-extrabold text-royal-900">{activos.length - totalOk}</p><p className="text-xs text-slate-500">por ver</p></div>
               </div>
@@ -175,7 +187,7 @@ export default function Capacitacion() {
                 <div className="flex items-center gap-3">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-royal-50 text-2xl">{c.emoji ?? '📚'}</span>
                   <div className="min-w-0 flex-1"><p className="truncate font-bold text-royal-900">{c.nombre}</p>
-                    <p className="text-xs text-slate-500">{total ? `${ok} de ${total} videos` : 'Próximamente'}</p></div>
+                    <p className="text-xs text-slate-500">{total ? `${ok} de ${total} completados` : 'Próximamente'}</p></div>
                   <span className={`text-lg font-extrabold ${p === 100 ? 'text-emerald-600' : 'text-royal-900'}`}>{total ? `${p}%` : '—'}</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className={`h-full rounded-full ${p === 100 ? 'bg-emerald-500' : 'bg-royal-500'}`} style={{ width: `${p}%` }} /></div>
@@ -185,27 +197,29 @@ export default function Capacitacion() {
         </div>
       ))}
 
-      {tab === 'videos' && (
+      {(tab === 'video' || tab === 'podcast' || tab === 'lectura') && (() => { const tipo = tab; const delTipo = videos.filter((v) => (v.tipo ?? 'video') === tipo); const statsT = listaCats.map((c) => { const vs = deCat(c.slug, delTipo.filter((v) => v.activo)); return { c, total: vs.length, pct: vs.length ? Math.round((vs.filter((v) => vistos.has(v.id)).length / vs.length) * 100) : 0 }; }); return delTipo.length === 0 ? <Empty icon={tipo === 'lectura' ? <BookOpen size={30} /> : tipo === 'podcast' ? <Headphones size={30} /> : <GraduationCap size={30} />} title="Próximamente" text={TIPO_TXT[tipo].vacio} /> : (
         <div className="space-y-6">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             <button className={`chip whitespace-nowrap ${filtro === '' ? 'bg-royal-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setFiltro('')}>Todas</button>
-            {statsCat.filter((s) => s.total > 0).map(({ c, pct: p }) => <button key={c.slug} className={`chip whitespace-nowrap ${filtro === c.slug ? 'bg-royal-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setFiltro(c.slug)}>{c.emoji} {c.nombre} · {p}%</button>)}
+            {statsT.filter((s) => s.total > 0).map(({ c, pct: p }) => <button key={c.slug} className={`chip whitespace-nowrap ${filtro === c.slug ? 'bg-royal-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setFiltro(c.slug)}>{c.emoji} {c.nombre} · {p}%</button>)}
           </div>
-          {listaCats.filter((c) => (!filtro || c.slug === filtro) && deCat(c.slug).length).map((c) => (
+          {listaCats.filter((c) => (!filtro || c.slug === filtro) && deCat(c.slug, delTipo).length).map((c) => (
             <section key={c.slug}>
               <h2 className="mb-3 font-bold text-royal-900">{c.emoji} {c.nombre}</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {deCat(c.slug).map((v) => { const id = ytId(v.url); const ok = vistos.has(v.id); return (
+                {deCat(c.slug, delTipo).map((v) => { const id = ytId(v.url); const ok = vistos.has(v.id); return (
                   <div key={v.id} className={`card overflow-hidden ${!v.activo ? 'opacity-50' : ''}`}>
                     <button className="relative block aspect-video w-full bg-royal-900" onClick={() => setVer(v)}>
                       {id && <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" className="h-full w-full object-cover" />}
                       <span className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={48} className="text-white drop-shadow" /></span>
                       {ok && <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white"><CheckCircle2 size={13} /> Visto</span>}
+                      {v.tipo === 'podcast' && <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-violet-600 px-2 py-0.5 text-xs font-semibold text-white"><Headphones size={13} /> Podcast</span>}
+                      {!id && v.tipo === 'lectura' && <span className="absolute inset-0 grid place-items-center text-5xl">📖</span>}
                       {v.idioma === 'sub' && <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold text-white"><Subtitles size={13} /> Subtitulado</span>}
                     </button>
                     <div className="flex items-start gap-2 p-4">
                       <div className="min-w-0 flex-1"><p className="font-semibold">{v.titulo}</p>{v.descripcion && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{v.descripcion}</p>}</div>
-                      {esAdmin && <><button className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" onClick={() => setForm({ id: v.id, titulo: v.titulo, descripcion: v.descripcion ?? '', url: v.url, categoria: v.categoria ?? '', idioma: v.idioma ?? 'es', orden: v.orden, activo: v.activo })}><Pencil size={15} /></button>
+                      {esAdmin && <><button className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" onClick={() => setForm({ id: v.id, titulo: v.titulo, descripcion: v.descripcion ?? '', url: v.url, categoria: v.categoria ?? '', idioma: v.idioma ?? 'es', tipo: v.tipo ?? 'video', orden: v.orden, activo: v.activo })}><Pencil size={15} /></button>
                         <button className="rounded-full p-1.5 text-coral-600 hover:bg-red-50" onClick={() => borrar(v)}><Trash2 size={15} /></button></>}
                     </div>
                   </div>); })}
@@ -213,7 +227,7 @@ export default function Capacitacion() {
             </section>
           ))}
         </div>
-      )}
+      ); })()}
 
       {tab === 'contenido' && esAdmin && (() => {
         const abiertos = pend.filter((p) => !p.hecho);
@@ -253,13 +267,15 @@ export default function Capacitacion() {
 
       <Modal open={!!ver} onClose={() => setVer(null)} title={ver?.titulo ?? ''} wide>
         {ver && (<div><Reproductor v={ver} onFin={() => terminar(ver)} />
-          <p className="mt-3 text-sm text-slate-500">{vistos.has(ver.id) ? '✅ Ya completaste este video.' : 'Miralo hasta el final para que cuente en tus objetivos.'}{ver.idioma === 'sub' ? ' Si no ves los subtítulos, tocá CC en el reproductor.' : ''}</p></div>)}
+          <p className="mt-3 text-sm text-slate-500">{vistos.has(ver.id) ? `✅ ${TIPO_TXT[ver.tipo ?? 'video'].hecho}` : TIPO_TXT[ver.tipo ?? 'video'].accion}{ver.idioma === 'sub' ? ' Si no ves los subtítulos, tocá CC en el reproductor.' : ''}</p>
+          {!vistos.has(ver.id) && (ver.tipo === 'lectura' || spotifyEmbed(ver.url)) && <button className="btn-primary mt-3" onClick={() => terminar(ver)}><CheckCircle2 size={16} /> {ver.tipo === 'lectura' ? 'Marcar como leído' : 'Marcar como escuchado'}</button>}</div>)}
       </Modal>
-      <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Editar video' : 'Agregar video'}>
+      <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Editar material' : 'Agregar material'}>
         {form && (
           <form onSubmit={guardar} className="space-y-3.5">
             <div><label className="label">Título</label><input className="input" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required /></div>
-            <div><label className="label">Link de YouTube (puede ser no listado) o de un archivo de video</label><input className="input" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} required /></div>
+            <div><label className="label">Tipo</label><select className="input" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as Tipo })}><option value="video">Video</option><option value="podcast">Podcast</option><option value="lectura">Lectura (PDF)</option></select></div>
+            <div><label className="label">{form.tipo === 'lectura' ? 'Link del PDF' : form.tipo === 'podcast' ? 'Link de YouTube, Spotify o archivo de audio' : 'Link de YouTube (puede ser no listado) o de un archivo de video'}</label><input className="input" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} required /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Categoría</label><select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}><option value="">General</option>{cats.map((c) => <option key={c.slug} value={c.slug}>{c.emoji} {c.nombre}</option>)}</select></div>
               <div><label className="label">Idioma</label><select className="input" value={form.idioma} onChange={(e) => setForm({ ...form, idioma: e.target.value as 'es' | 'sub' })}><option value="es">Español</option><option value="sub">Otro idioma, subtitulado</option></select></div>
