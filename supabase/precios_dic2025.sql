@@ -92,3 +92,5 @@ COLADOR PARA SMOOTHIES: además de deliciosos batidos, te ayuda a elaborar papil
 COLADOR PARA JUGOS CON MÁS PULPA: si preferís más pulpa en tus jugos, este es el colador para vos. Usalo también para preparar leche de soja.$d$ where codigo='PR1452';
 update config set factores='{"3":0.3832,"6":0.2125,"9":0.1562,"12":0.1287,"14":0.1172,"18":0.1025}'::jsonb, updated_at=now();
 commit;
+-- Sin precio en la lista: ocultos
+update productos set activo=false where precio=0;

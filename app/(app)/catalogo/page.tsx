@@ -9,7 +9,8 @@ import ProductDetail from '@/components/ProductDetail';
 import type { Producto } from '@/lib/types';
 
 export default function Catalogo() {
-  const { categorias, productos, loading } = useCatalogo();
+  const { categorias, productos: todos, loading } = useCatalogo();
+  const productos = todos.filter((p) => p.activo);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Producto | null>(null);
   const res = useMemo(() => q.trim().length < 2 ? [] : productos.filter((p) => (p.nombre + ' ' + (p.codigo ?? '')).toLowerCase().includes(q.toLowerCase())), [q, productos]);

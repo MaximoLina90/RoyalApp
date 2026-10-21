@@ -15,7 +15,8 @@ export default function Cotizador() {
   const router = useRouter();
   const { profile } = useAuth();
   const { items, add, setQty, remove, clear } = useCart();
-  const { productos, categorias } = useCatalogo();
+  const { productos: todos, categorias } = useCatalogo();
+  const productos = todos.filter((p) => p.activo);
   const cfg = useConfig();
   const toast = useToast();
   const [porc, setPorc] = useState(20);

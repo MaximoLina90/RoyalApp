@@ -9,7 +9,8 @@ import ProductDetail from '@/components/ProductDetail';
 import type { Producto } from '@/lib/types';
 
 export default function CategoriaPage({ params }: { params: { slug: string } }) {
-  const { categorias, productos, loading } = useCatalogo();
+  const { categorias, productos: todos, loading } = useCatalogo();
+  const productos = todos.filter((p) => p.activo);
   const [sel, setSel] = useState<Producto | null>(null);
   const cat = categorias.find((c) => c.slug === params.slug);
   const lista = productos.filter((p) => p.categoria_id === cat?.id);
