@@ -46,17 +46,25 @@ function calcular(uid: string, d: NonNullable<typeof cache>) {
 /** Avance por categoría de un vendedor (para el detalle en Mi red). */
 export function CapacitacionVendedor({ uid }: { uid: string }) {
   const d = useDatos();
+  const [abierto, setAbierto] = useState(false);
   if (!d) return <Spinner />;
   const r = calcular(uid, d);
   return (
     <div className="space-y-2">
-      <Barra p={pct(r.ok, r.total)} />
-      <p className="text-xs text-slate-500">{r.ok} de {r.total} completados · última actividad {fecha(r.ultimo)}</p>
-      <div className="grid gap-1.5 pt-1 sm:grid-cols-2">
-        {d.cats.filter((c) => r.porCat.get(c.slug)?.total).map((c) => { const s = r.porCat.get(c.slug)!; return (
-          <div key={c.slug} className="text-xs"><p className="truncate text-slate-600">{c.emoji} {c.nombre} <span className="text-slate-400">{s.ok}/{s.total}</span></p><Barra p={pct(s.ok, s.total)} /></div>
-        ); })}
-      </div>
+      <button className="flex w-full items-center gap-2 rounded-xl bg-white p-3 text-left hover:bg-royal-50/50" onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
+        <div className="min-w-0 flex-1">
+          <Barra p={pct(r.ok, r.total)} />
+          <p className="mt-1 text-xs text-slate-500">{r.ok} de {r.total} completados · última actividad {fecha(r.ultimo)}</p>
+        </div>
+        <ChevronDown size={20} className={`shrink-0 text-royal-600 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+      </button>
+      {abierto && (
+        <div className="grid gap-x-5 gap-y-1.5 px-1 pt-1 sm:grid-cols-2">
+          {d.cats.filter((c) => r.porCat.get(c.slug)?.total).map((c) => { const s = r.porCat.get(c.slug)!; return (
+            <div key={c.slug} className="text-xs"><p className="truncate text-slate-600">{c.emoji} {c.nombre} <span className="text-slate-400">{s.ok}/{s.total}</span></p><Barra p={pct(s.ok, s.total)} /></div>
+          ); })}
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useToast } from '@/components/useToast';
 import { arbol, rama, esLider, etiquetaEquipo } from '@/lib/red';
 import Objetivos, { PuestosVendedor } from '@/components/Objetivos';
 import CapacitacionRed, { CapacitacionVendedor } from '@/components/CapacitacionRed';
+import VentasVendedor from '@/components/VentasVendedor';
 import type { Nodo, Profile, Dispositivo, Acceso } from '@/lib/types';
 
 type Tab = 'estructura' | 'objetivos' | 'capacitacion' | 'pendientes' | 'alertas';
@@ -244,6 +245,7 @@ export default function Red() {
                   <button className="btn-ghost text-coral-600" onClick={() => borrarCuenta(pDet)}><Trash2 size={16} /> Borrar cuenta</button>
                 </div>
               )}
+              <div className="rounded-2xl bg-slate-50 p-4"><p className="label">Ventas</p><VentasVendedor uid={pDet.id} /></div>
               <div className="rounded-2xl bg-slate-50 p-4"><p className="label">Puesto en desafíos vigentes</p><PuestosVendedor uid={pDet.id} /></div>
               <div className="rounded-2xl bg-slate-50 p-4"><p className="label">Avance en capacitación</p><CapacitacionVendedor uid={pDet.id} /></div>
               <div className="grid gap-4 md:grid-cols-2">
