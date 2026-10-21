@@ -7,7 +7,7 @@ import { getDeviceId, getDeviceName } from '@/lib/device';
 import { useAuth } from './AuthProvider';
 import { Spinner } from './ui';
 
-type Estado = { estado: 'ok' | 'pendiente' | 'suspendido' | 'revocado' | 'limite' | 'verificar' | 'sin_perfil'; celular?: string; max?: number };
+type Estado = { estado: 'ok' | 'pendiente' | 'suspendido' | 'revocado' | 'limite' | 'verificar' | 'verificar_telefono' | 'sin_perfil'; celular?: string; max?: number };
 const CANALES = (process.env.NEXT_PUBLIC_VERIFY_CHANNELS || 'sms').split(',');
 
 async function api(path: string, body: object) {
@@ -54,10 +54,10 @@ export default function DeviceGate({ children }: { children: ReactNode }) {
   };
 
   const info: Record<string, { icon: ReactNode; title: string; text: string }> = {
-    pendiente: { icon: <Clock size={30} />, title: 'Cuenta pendiente de aprobación', text: 'Tu registro llegó al administrador. Vas a poder entrar apenas habilite tu cuenta.' },
+    pendiente: { icon: <Clock size={30} />, title: 'Cuenta pendiente de aprobación', text: 'Tu celular ya está verificado. Tu líder tiene que aprobar la cuenta para que puedas entrar.' },
     suspendido: { icon: <Ban size={30} />, title: 'Cuenta suspendida', text: 'Tu cuenta fue suspendida. Comunicate con el administrador del equipo.' },
     revocado: { icon: <Ban size={30} />, title: 'Dispositivo dado de baja', text: 'Este dispositivo ya no está autorizado para tu cuenta.' },
-    limite: { icon: <Smartphone size={30} />, title: 'Límite de dispositivos', text: `Tu cuenta ya está activa en ${st.max ?? 2} dispositivos. Pedile al administrador que libere uno para usar este.` },
+    limite: { icon: <Smartphone size={30} />, title: 'Límite de dispositivos', text: `Tu cuenta ya está activa en ${st.max ?? 2} dispositivos. Pedile a tu líder que libere uno para usar este.` },
     sin_perfil: { icon: <Clock size={30} />, title: 'Perfil incompleto', text: 'Completá tu perfil para continuar.' },
   };
 
@@ -65,10 +65,10 @@ export default function DeviceGate({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-royal-600 to-royal-900 p-4">
       <div className="card w-full max-w-md p-6 text-center md:p-8">
         <div className="mx-auto mb-4 w-fit rounded-full bg-white p-1 shadow"><Image src="/icon.png" alt="" width={48} height={48} /></div>
-        {st.estado === 'verificar' ? (<>
+        {st.estado === 'verificar' || st.estado === 'verificar_telefono' ? (<>
           <div className="mx-auto mb-3 w-fit rounded-2xl bg-royal-50 p-4 text-royal-600"><ShieldCheck size={30} /></div>
-          <h1 className="text-xl font-bold text-royal-900">Verificá este dispositivo</h1>
-          <p className="mt-2 text-sm text-slate-500">Por seguridad, cada cuenta puede usarse en hasta 2 dispositivos. Te enviamos un código a tu celular {st.celular ?? ''}.</p>
+          <h1 className="text-xl font-bold text-royal-900">{st.estado === 'verificar_telefono' ? 'Verificá tu celular' : 'Verificá este dispositivo'}</h1>
+          <p className="mt-2 text-sm text-slate-500">{st.estado === 'verificar_telefono' ? `Último paso del registro: te enviamos un código al ${st.celular ?? 'celular'} que cargaste. Después tu líder aprueba la cuenta.` : `Por seguridad, cada cuenta puede usarse en hasta 2 dispositivos. Te enviamos un código a tu celular ${st.celular ?? ''}.`}</p>
           {!enviado ? (
             <div className="mt-5 space-y-2">
               {CANALES.map((c) => (

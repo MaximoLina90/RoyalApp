@@ -3,11 +3,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, ReactNode } from 'react';
-import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt, ChefHat, GraduationCap, Store, Menu, X } from 'lucide-react';
+import { Home, BookOpen, Calculator, CalendarDays, BarChart3, Settings, LogOut, Receipt, ChefHat, GraduationCap, Store, Menu, X, Network } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useCart } from './CartProvider';
 import { Spinner } from './ui';
 import DeviceGate from './DeviceGate';
+import { supabase } from '@/lib/supabase';
 
 const NAV = [
   { href: '/', label: 'Inicio', icon: Home },
@@ -30,6 +31,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const [menu, setMenu] = useState(false);
+  const [lider, setLider] = useState(false);
+  useEffect(() => {
+    if (!profile?.codigo_vendedor) return;
+    supabase.from('nodos').select('codigo', { count: 'exact', head: true }).eq('superior', profile.codigo_vendedor).then(({ count }) => setLider((count ?? 0) > 0));
+  }, [profile]);
   useEffect(() => setMenu(false), [path]);
 
   useEffect(() => {
@@ -60,7 +66,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
           <div className="mx-3 my-3 border-t border-white/15" />
-          {EXTRA.map(({ href, label, icon: Icon }) => (
+          {[...((lider || profile.rol === 'admin') ? [{ href: '/red', label: 'Mi red', icon: Network }] : []), ...EXTRA].map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${path.startsWith(href) ? 'bg-white text-royal-700 shadow' : 'text-royal-50 hover:bg-white/10'}`}><Icon size={19} /> {label}</Link>
           ))}
           {profile.rol === 'admin' && (
@@ -92,7 +98,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <button onClick={() => setMenu(false)} className="rounded-full p-1.5 hover:bg-white/10" aria-label="Cerrar"><X size={20} /></button>
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-              {[...EXTRA, ...(profile.rol === 'admin' ? [{ href: '/admin', label: 'Administración', icon: Settings }] : [])].map(({ href, label, icon: Icon }) => (
+              {[...((lider || profile.rol === 'admin') ? [{ href: '/red', label: 'Mi red', icon: Network }] : []), ...EXTRA, ...(profile.rol === 'admin' ? [{ href: '/admin', label: 'Administración', icon: Settings }] : [])].map(({ href, label, icon: Icon }) => (
                 <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${path.startsWith(href) ? 'bg-royal-50 text-royal-700' : 'text-slate-700 hover:bg-slate-50'}`}><Icon size={20} /> {label}</Link>
               ))}
             </nav>

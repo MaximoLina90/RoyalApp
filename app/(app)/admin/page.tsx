@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Search, Upload, Package, Shield, AlertTriangle, Smartphone, Check, Ban, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, Search, Upload, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { useCatalogo } from '@/components/data';
@@ -9,9 +9,9 @@ import { PageHeader, Modal, Toast, Spinner } from '@/components/ui';
 import { useToast } from '@/components/useToast';
 import { pesos } from '@/lib/format';
 import { PLANES, DEFAULT_FACTORES } from '@/lib/cotizador';
-import type { Producto, Profile, Dispositivo, Acceso } from '@/lib/types';
+import type { Producto } from '@/lib/types';
 
-type Tab = 'productos' | 'cuotas' | 'equipo';
+type Tab = 'productos' | 'cuotas';
 const nuevo = (cat: number): Partial<Producto> => ({ nombre: '', codigo: '', descripcion: '', precio: 0, categoria_id: cat, activo: true, orden: 99, imagen_url: null });
 
 export default function Admin() {
@@ -24,19 +24,11 @@ export default function Admin() {
   const [edit, setEdit] = useState<Partial<Producto> | null>(null);
   const [factores, setFactores] = useState<Record<string, number>>(DEFAULT_FACTORES);
   const [dias, setDias] = useState(31);
-  const [kw, setKw] = useState('');
-  const [equipo, setEquipo] = useState<Profile[]>([]);
   const [subiendo, setSubiendo] = useState(false);
-  const [dispositivos, setDispositivos] = useState<Dispositivo[]>([]);
-  const [accesos, setAccesos] = useState<Acceso[]>([]);
-  const [abierto, setAbierto] = useState<string | null>(null);
 
   useEffect(() => { if (profile && profile.rol !== 'admin') router.replace('/'); }, [profile, router]);
   useEffect(() => {
     supabase.from('config').select('factores,dias_mes').maybeSingle().then(({ data }) => { if (data) { setFactores(data.factores); setDias(data.dias_mes); } });
-    supabase.from('profiles').select('*').order('created_at').then(({ data }) => setEquipo((data as Profile[]) ?? []));
-    supabase.from('dispositivos').select('*').order('created_at').then(({ data }) => setDispositivos((data as Dispositivo[]) ?? []));
-    supabase.from('accesos').select('*').order('created_at', { ascending: false }).limit(500).then(({ data }) => setAccesos((data as Acceso[]) ?? []));
   }, []);
   const lista = useMemo(() => productos.filter((p) => (p.nombre + (p.codigo ?? '')).toLowerCase().includes(q.toLowerCase())), [productos, q]);
   if (profile?.rol !== 'admin') return <Spinner />;
@@ -62,39 +54,11 @@ export default function Admin() {
     const { error } = await supabase.from('config').update({ factores, dias_mes: dias, updated_at: new Date().toISOString() }).eq('id', 1);
     toast.show(error ? error.message : 'Cuotas actualizadas', error ? 'error' : 'ok');
   };
-  const cambiarKw = async () => {
-    if (kw.length < 4) return toast.show('Mínimo 4 caracteres', 'error');
-    const { error } = await supabase.rpc('cambiar_keyword', { p_nueva: kw });
-    toast.show(error ? error.message : 'Palabra clave actualizada', error ? 'error' : 'ok'); setKw('');
-  };
-  const cambiarRol = async (u: Profile) => {
-    const rol = u.rol === 'admin' ? 'vendedor' : 'admin';
-    if (u.id === profile.id) return toast.show('No podés cambiar tu propio rol', 'error');
-    const { error } = await supabase.from('profiles').update({ rol }).eq('id', u.id);
-    if (error) return toast.show(error.message, 'error');
-    setEquipo(equipo.map((x) => (x.id === u.id ? { ...x, rol } : x)));
-  };
-
-  const actualizar = async (u: Profile, cambios: Partial<Profile>, msg: string) => {
-    const { error } = await supabase.from('profiles').update(cambios).eq('id', u.id);
-    if (error) return toast.show(error.message, 'error');
-    setEquipo(equipo.map((x) => (x.id === u.id ? { ...x, ...cambios } : x))); toast.show(msg);
-  };
-  const liberar = async (d: Dispositivo) => {
-    if (!confirm(`¿Liberar "${d.nombre ?? 'dispositivo'}"? El vendedor podrá verificar otro dispositivo en su lugar.`)) return;
-    const { error } = await supabase.from('dispositivos').delete().eq('id', d.id);
-    if (error) return toast.show(error.message, 'error');
-    setDispositivos(dispositivos.filter((x) => x.id !== d.id)); toast.show('Dispositivo liberado');
-  };
-  const pendientes = equipo.filter((u) => !u.aprobado && !u.suspendido).length;
-  const alertas = (uid: string) => accesos.filter((a) => a.usuario_id === uid && a.alerta && Date.now() - new Date(a.created_at).getTime() < 30 * 86400_000);
-  const fh = (iso: string) => new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-
   return (
     <div>
-      <PageHeader title="Administración" subtitle="Productos, precios, plan de cuotas y equipo." />
+      <PageHeader title="Administración" subtitle="Productos, precios y plan de cuotas. El equipo se gestiona en Mi red." />
       <div className="mb-5 flex max-w-md gap-1 rounded-xl bg-slate-200/60 p-1">
-        {([['productos', 'Productos'], ['cuotas', 'Cuotas'], ['equipo', 'Equipo']] as [Tab, string][]).map(([k, l]) => <button key={k} className={`seg ${tab === k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(k)}>{l}{k === 'equipo' && pendientes > 0 && <span className="ml-1.5 rounded-full bg-coral-500 px-1.5 text-[10px] font-bold text-white">{pendientes}</span>}</button>)}
+        {([['productos', 'Productos'], ['cuotas', 'Cuotas']] as [Tab, string][]).map(([k, l]) => <button key={k} className={`seg ${tab === k ? 'seg-on' : 'seg-off'}`} onClick={() => setTab(k)}>{l}</button>)}
       </div>
 
       {tab === 'productos' && (loading ? <Spinner /> : (<>
@@ -135,76 +99,6 @@ export default function Admin() {
             </div>
             <button className="btn-primary mt-5 w-full" onClick={guardarCuotas}>Guardar</button>
           </div>
-          <div className="card h-fit p-5">
-            <p className="font-bold text-royal-900">Palabra clave de registro</p>
-            <p className="mb-4 text-xs text-slate-500">Los vendedores nuevos la necesitan para crear su cuenta. Se guarda encriptada.</p>
-            <input className="input" placeholder="Nueva palabra clave" value={kw} onChange={(e) => setKw(e.target.value)} />
-            <button className="btn-secondary mt-3 w-full" onClick={cambiarKw}>Actualizar</button>
-          </div>
-        </div>
-      )}
-
-      {tab === 'equipo' && (
-        <div className="card divide-y divide-slate-100">
-          {[...equipo].sort((x, y) => Number(x.aprobado) - Number(y.aprobado)).map((u) => {
-            const devs = dispositivos.filter((d) => d.usuario_id === u.id);
-            const al = alertas(u.id);
-            const acc = accesos.filter((a) => a.usuario_id === u.id).slice(0, 8);
-            return (
-              <div key={u.id} className="p-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-royal-600 font-bold text-white">{u.nombre[0]?.toUpperCase()}</div>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 truncate font-medium">{u.nombre}
-                      {!u.aprobado && !u.suspendido && <span className="chip bg-amber-100 text-amber-700">Pendiente</span>}
-                      {u.suspendido && <span className="chip bg-red-100 text-red-700">Suspendido</span>}
-                      {al.length > 0 && <span className="chip gap-1 bg-red-100 text-red-700"><AlertTriangle size={12} />{al.length}</span>}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">{u.email}{u.codigo_vendedor ? ` · Cód. ${u.codigo_vendedor}` : ''}{u.celular ? ` · ${u.celular}` : ''}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {!u.aprobado && <button className="btn-primary px-3 py-1.5" onClick={() => actualizar(u, { aprobado: true, suspendido: false }, 'Cuenta aprobada')}><Check size={15} /> Aprobar</button>}
-                    {u.id !== profile.id && u.aprobado && <button className={`chip gap-1 px-3 py-1 ${u.suspendido ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`} onClick={() => actualizar(u, { suspendido: !u.suspendido }, u.suspendido ? 'Cuenta reactivada' : 'Cuenta suspendida')}><Ban size={12} />{u.suspendido ? 'Reactivar' : 'Suspender'}</button>}
-                    <button onClick={() => cambiarRol(u)} className={`chip gap-1 px-3 py-1 ${u.rol === 'admin' ? 'bg-royal-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{u.rol === 'admin' && <Shield size={12} />}{u.rol}</button>
-                    <button className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" onClick={() => setAbierto(abierto === u.id ? null : u.id)} aria-label="Ver detalle"><ChevronDown size={18} className={abierto === u.id ? 'rotate-180' : ''} /></button>
-                  </div>
-                </div>
-                {abierto === u.id && (
-                  <div className="mt-4 grid gap-4 rounded-2xl bg-slate-50 p-4 md:grid-cols-2">
-                    <div>
-                      <p className="label">Dispositivos ({devs.filter((d) => d.verificado_at && !d.revocado).length}/{u.max_dispositivos})</p>
-                      {devs.length === 0 ? <p className="text-sm text-slate-500">Ninguno verificado todavía.</p> : devs.map((d) => (
-                        <div key={d.id} className="mb-2 flex items-center gap-2 rounded-xl bg-white p-2.5 text-sm">
-                          <Smartphone size={16} className="text-royal-600" />
-                          <div className="min-w-0 flex-1"><p className="truncate font-medium">{d.nombre ?? 'Dispositivo'}</p><p className="text-xs text-slate-500">Último uso {fh(d.ultimo_acceso)}</p></div>
-                          <button className="rounded-full p-1.5 text-coral-600 hover:bg-red-50" onClick={() => liberar(d)} aria-label="Liberar"><Trash2 size={15} /></button>
-                        </div>
-                      ))}
-                      <div className="mt-3 flex items-center gap-2 text-sm"><span className="text-slate-500">Máximo</span>
-                        <select className="input w-20 py-1.5" value={u.max_dispositivos} onChange={(e) => actualizar(u, { max_dispositivos: Number(e.target.value) }, 'Límite actualizado')}>{[1, 2, 3, 4].map((n) => <option key={n}>{n}</option>)}</select>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2 text-sm"><span className="text-slate-500">Celular</span>
-                        <input className="input py-1.5" defaultValue={u.celular ?? ''} onBlur={(e) => e.target.value !== (u.celular ?? '') && actualizar(u, { celular: e.target.value }, 'Celular actualizado')} />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="label">Últimos ingresos</p>
-                      {acc.length === 0 ? <p className="text-sm text-slate-500">Sin ingresos registrados.</p> : (
-                        <ul className="space-y-1.5 text-xs">
-                          {acc.map((a) => (
-                            <li key={a.id} className={`rounded-lg p-2 ${a.alerta ? 'bg-red-50 text-red-700' : 'bg-white text-slate-600'}`}>
-                              <span className="font-semibold">{fh(a.created_at)}</span> · {a.dispositivo ?? '—'} · {[a.ciudad, a.pais].filter(Boolean).join(', ') || a.ip || 'ubicación desconocida'}
-                              {a.alerta && <p className="mt-0.5 flex items-center gap-1 font-semibold"><AlertTriangle size={12} />{a.alerta}</p>}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
 
