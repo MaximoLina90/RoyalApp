@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GraduationCap, Plus, Pencil, Trash2, CheckCircle2, PlayCircle, LayoutDashboard, ListVideo, ClipboardList, Subtitles, Circle } from 'lucide-react';
+import { Award, Lock, GraduationCap, Plus, Pencil, Trash2, CheckCircle2, PlayCircle, LayoutDashboard, ListVideo, ClipboardList, Subtitles, Circle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner, Toast } from '@/components/ui';
@@ -87,7 +87,11 @@ export default function Capacitacion() {
   const terminar = async (v: Video) => {
     if (vistos.has(v.id)) return;
     const { error } = await supabase.from('videos_vistos').insert({ video_id: v.id, usuario_id: profile!.id });
-    if (!error) { setVistos(new Set([...vistos, v.id])); toast.show('¡Video completado! Suma a tus objetivos 🎓'); }
+    if (error) return;
+    const nuevos = new Set([...vistos, v.id]); setVistos(nuevos);
+    const cat = cats.find((c) => c.slug === v.categoria);
+    const completa = cat?.especial && cat.insignia && videos!.filter((x) => x.activo && x.categoria === cat.slug).every((x) => nuevos.has(x.id));
+    toast.show(completa ? `🏅 ¡Desbloqueaste la insignia "${cat!.insignia}"!` : '¡Video completado! Suma a tus objetivos 🎓');
   };
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault(); if (!form) return;
@@ -149,8 +153,24 @@ export default function Capacitacion() {
               </div>
             </div>
           </div>
+          {statsCat.filter((s) => s.c.especial && s.total > 0).map(({ c, total, ok, pct: p }) => { const logrado = ok === total; const sig = deCat(c.slug, activos).find((v) => !vistos.has(v.id)); return (
+            <div key={c.slug} className={`card overflow-hidden p-0 ${logrado ? 'ring-2 ring-amber-400' : ''}`}>
+              <div className="flex flex-col gap-4 bg-gradient-to-r from-royal-900 to-royal-600 p-5 text-white sm:flex-row sm:items-center">
+                <div className={`grid h-20 w-20 shrink-0 place-items-center self-center rounded-full ${logrado ? 'bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/40' : 'bg-white/10'}`}>
+                  {logrado ? <Award size={42} className="text-white" /> : <span className="relative text-4xl grayscale-[60%]">{c.emoji}<Lock size={16} className="absolute -bottom-1 -right-2 rounded-full bg-royal-900 p-0.5" /></span>}
+                </div>
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-royal-100">Sección especial · Insignia</p>
+                  <p className="text-xl font-extrabold">{c.nombre}</p>
+                  {c.descripcion && <p className="text-sm text-royal-100">{c.descripcion}</p>}
+                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/20"><div className={`h-full rounded-full ${logrado ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${p}%` }} /></div>
+                  <p className="mt-1.5 text-sm">{logrado ? `🏅 Insignia "${c.insignia}" desbloqueada` : `${ok} de ${total} módulos · ${p}% · Completalo para ganar "${c.insignia}"`}</p>
+                </div>
+                <button className="rounded-xl bg-white px-4 py-2.5 font-bold text-royal-900 hover:bg-royal-50" onClick={() => (sig ? setVer(sig) : abrirCat(c.slug))}>{logrado ? 'Repasar' : ok ? 'Continuar' : 'Empezar'}</button>
+              </div>
+            </div>); })}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {statsCat.filter((s) => s.total > 0 || esAdmin).map(({ c, total, ok, pct: p }) => (
+            {statsCat.filter((s) => !s.c.especial && (s.total > 0 || esAdmin)).map(({ c, total, ok, pct: p }) => (
               <button key={c.slug} onClick={() => abrirCat(c.slug)} disabled={!total} className="card p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60 disabled:hover:translate-y-0">
                 <div className="flex items-center gap-3">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-royal-50 text-2xl">{c.emoji ?? '📚'}</span>

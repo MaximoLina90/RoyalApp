@@ -154,3 +154,49 @@ select v.* from (values
 ('salud','Manejo del estrés para vendedores','resumir','Varios',null)
 ) as v(categoria,titulo,accion,fuente,nota)
 where not exists (select 1 from public.capacitacion_pendientes x where x.titulo = v.titulo);
+
+-- Secciones especiales con insignia (logro) al completarlas
+alter table public.capacitacion_categorias add column if not exists especial boolean not null default false;
+alter table public.capacitacion_categorias add column if not exists insignia text;
+alter table public.capacitacion_categorias add column if not exists descripcion text;
+insert into public.capacitacion_categorias (slug,nombre,emoji,orden,especial,insignia,descripcion) values
+('fenix','Seminario Fénix','🦅',-1,true,'Graduado Fénix','El seminario de Brian Tracy sobre la psicología del logro, en 27 módulos.')
+on conflict (slug) do update set nombre=excluded.nombre, emoji=excluded.emoji, orden=excluded.orden, especial=excluded.especial, insignia=excluded.insignia, descripcion=excluded.descripcion;
+
+insert into public.capacitacion_videos (titulo,url,categoria,idioma,orden,fuente)
+select v.* from (values
+('Módulo 1: La psicología del éxito','https://www.youtube.com/watch?v=62wDYoPC4Sg','fenix','es',1,'Seminario Fénix, Brian Tracy'),
+('Módulo 2: Las 7 leyes mentales','https://www.youtube.com/watch?v=6uDZJ4gytno','fenix','es',2,'Seminario Fénix, Brian Tracy'),
+('Módulo 3: Cómo desbloquear su potencial','https://www.youtube.com/watch?v=9Em-dDfkdHQ','fenix','es',3,'Seminario Fénix, Brian Tracy'),
+('Módulo 4: Su central de energía: el subconsciente','https://www.youtube.com/watch?v=fAEJ5HC76f0','fenix','es',4,'Seminario Fénix, Brian Tracy'),
+('Módulo 5: Cómo hacerse cargo de su vida','https://www.youtube.com/watch?v=NBDqBUU-uq4','fenix','es',5,'Seminario Fénix, Brian Tracy'),
+('Módulo 6: Eliminando las emociones negativas','https://www.youtube.com/watch?v=gr2YhEbzWmc','fenix','es',6,'Seminario Fénix, Brian Tracy'),
+('Módulo 7: Liberando sus frenos','https://www.youtube.com/watch?v=pvyxJt0NopQ','fenix','es',7,'Seminario Fénix, Brian Tracy'),
+('Módulo 8: Cómo anular las preocupaciones','https://www.youtube.com/watch?v=6fsDrjnsjI4','fenix','es',8,'Seminario Fénix, Brian Tracy'),
+('Módulo 9: Cómo programar su mente para el éxito','https://www.youtube.com/watch?v=xWxz1s6NpY8','fenix','es',9,'Seminario Fénix, Brian Tracy'),
+('Módulo 10: Cambiando su autoconcepto','https://www.youtube.com/watch?v=vJ8dwloUHcw','fenix','es',10,'Seminario Fénix, Brian Tracy'),
+('Módulo 11: La nueva dieta mental','https://www.youtube.com/watch?v=WtZtFgC3uKc','fenix','es',11,'Seminario Fénix, Brian Tracy'),
+('Módulo 12: Software para el cerebro','https://www.youtube.com/watch?v=ZS4joTwoCqQ','fenix','es',12,'Seminario Fénix, Brian Tracy'),
+('Módulo 13: Técnicas de aprendizaje rápido','https://www.youtube.com/watch?v=n3msCDD0fws','fenix','es',13,'Seminario Fénix, Brian Tracy'),
+('Módulo 14: Relajación progresiva con música','https://www.youtube.com/watch?v=WsBiieE1uuI','fenix','es',14,'Seminario Fénix, Brian Tracy'),
+('Módulo 15: 5 claves para establecer metas','https://www.youtube.com/watch?v=Omc4uAglRpE','fenix','es',15,'Seminario Fénix, Brian Tracy'),
+('Módulo 16: 12 pasos hacia la consecución de las metas','https://www.youtube.com/watch?v=8o3fiUHWlaI','fenix','es',16,'Seminario Fénix, Brian Tracy'),
+('Módulo 17: Estrategias de administración','https://www.youtube.com/watch?v=5vsSUG6Dq4g','fenix','es',17,'Seminario Fénix, Brian Tracy'),
+('Módulo 18: Cómo duplicar el poder mental','https://www.youtube.com/watch?v=m5sJS2j6aRM','fenix','es',18,'Seminario Fénix, Brian Tracy'),
+('Módulo 19: Cómo explotar su genio interno','https://www.youtube.com/watch?v=P6gqEqaONYI','fenix','es',19,'Seminario Fénix, Brian Tracy'),
+('Módulo 20: Técnicas creadoras para resolver problemas','https://www.youtube.com/watch?v=9feWbvAl7xs','fenix','es',20,'Seminario Fénix, Brian Tracy'),
+('Módulo 21: Cómo aumentar su nivel de energía','https://www.youtube.com/watch?v=SBgBvzZaujw','fenix','es',21,'Seminario Fénix, Brian Tracy'),
+('Módulo 22: La relación entre la mente y el cuerpo','https://www.youtube.com/watch?v=tBXtLWJ8Ckc','fenix','es',22,'Seminario Fénix, Brian Tracy'),
+('Módulo 23: Eliminando el estrés y la tensión','https://www.youtube.com/watch?v=FIleBBS124Y','fenix','es',23,'Seminario Fénix, Brian Tracy'),
+('Módulo 24: Cómo desarrollar una personalidad de éxito','https://www.youtube.com/watch?v=PbwxgBW14LU','fenix','es',24,'Seminario Fénix, Brian Tracy'),
+('Módulo 25: Construyendo relaciones superiores','https://www.youtube.com/watch?v=23x5ZfrV7CI','fenix','es',25,'Seminario Fénix, Brian Tracy'),
+('Módulo 26: Cómo formar súper niños','https://www.youtube.com/watch?v=Hx93Y63TSJQ','fenix','es',26,'Seminario Fénix, Brian Tracy'),
+('Módulo 27: Cómo encontrar el verdadero propósito de su vida','https://www.youtube.com/watch?v=JXtVZF7T32I','fenix','es',27,'Seminario Fénix, Brian Tracy'),
+('Enfocate solo en vos y volvete imparable (Brian Tracy)','https://www.youtube.com/watch?v=2x-vb9nWYos','desarrollo','es',20,'Brian Tracy'),
+('Obligate a ser disciplinado (Brian Tracy)','https://www.youtube.com/watch?v=lFZSkMQdjU4','desarrollo','es',21,'Brian Tracy'),
+('Pensá en lo que querés, no en lo que te detiene (Brian Tracy)','https://www.youtube.com/watch?v=gqtxvsXPIuc','motivacion','es',22,'Brian Tracy'),
+('Cómo desarrollar una mentalidad de hierro (Brian Tracy)','https://www.youtube.com/watch?v=sVXM3idkbMg','motivacion','es',23,'Brian Tracy'),
+('No te rindas ahora, estás a punto de lograrlo (Brian Tracy)','https://www.youtube.com/watch?v=iBTYPu7yibA','motivacion','es',24,'Brian Tracy'),
+('Cómo usar el pensamiento positivo para cambiar tu vida (Brian Tracy)','https://www.youtube.com/watch?v=a-PL-8e04wY','motivacion','es',25,'Brian Tracy')
+) as v(titulo,url,categoria,idioma,orden,fuente)
+where not exists (select 1 from public.capacitacion_videos x where x.url = v.url);

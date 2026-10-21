@@ -19,5 +19,5 @@ export interface VentaRed { id: string; usuario_id: string; numero: number; tota
 export interface Objetivo { id: string; creado_por: string | null; alcance: string; titulo: string; modo: 'meta' | 'competencia'; tipos: string[]; metrica: 'cantidad' | 'mayor'; cantidad: number | null; premio: number; desde: string; hasta: string; created_at: string }
 export interface Posicion { usuario_id: string; nombre: string; codigo: string | null; valor: number }
 export interface Video { id: string; titulo: string; descripcion: string | null; url: string; categoria: string | null; idioma: 'es' | 'sub'; fuente: string | null; orden: number; activo: boolean; created_at: string }
-export interface CategoriaCap { slug: string; nombre: string; emoji: string | null; orden: number }
+export interface CategoriaCap { slug: string; nombre: string; emoji: string | null; orden: number; especial?: boolean; insignia?: string | null; descripcion?: string | null }
 export interface PendienteCap { id: string; categoria: string | null; titulo: string; accion: 'subtitular' | 'traducir' | 'grabar' | 'resumir' | 'enlazar'; fuente: string | null; url: string | null; nota: string | null; hecho: boolean }
