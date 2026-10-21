@@ -14,7 +14,7 @@ const ACCESOS = [
   { href: '/cronograma', label: 'Agenda', text: 'Demos y visitas', icon: CalendarDays, color: 'from-emerald-500 to-emerald-700' },
   { href: '/estadisticas', label: 'Estadísticas', text: 'Tus resultados', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
   { href: '/ventas', label: 'Mis pedidos', text: 'Historial de ventas', icon: Receipt, color: 'from-sky-500 to-blue-700' },
-  { href: '/marketplace', label: 'Marketplace', text: 'Comprá y vendé', icon: Store, color: 'from-violet-500 to-purple-700' },
+  { href: '/marketplace', label: 'Marketplace', text: 'Accesorios, insumos y más', icon: Store, color: 'from-violet-500 to-purple-700' },
   { href: '/recetas', label: 'Recetas Royal', text: 'Próximamente', icon: ChefHat, color: 'from-rose-500 to-red-600' },
   { href: '/capacitacion', label: 'Capacitación', text: 'Próximamente', icon: GraduationCap, color: 'from-teal-500 to-cyan-700' },
 ];

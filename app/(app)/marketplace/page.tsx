@@ -18,7 +18,7 @@ export default function Marketplace() {
   const [items, setItems] = useState<MarketplaceItem[] | null>(null);
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('Todas');
-  const [mios, setMios] = useState(false);
+  const esAdminLista = profile?.rol === 'admin';
   const [form, setForm] = useState<Form | null>(null);
   const [ver, setVer] = useState<MarketplaceItem | null>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -33,11 +33,11 @@ export default function Marketplace() {
 
   const lista = useMemo(() => (items ?? []).filter((i) =>
     (cat === 'Todas' || i.categoria === cat) &&
-    (!mios || i.usuario_id === profile?.id) &&
-    (mios || i.activo) &&
-    (i.titulo + ' ' + (i.descripcion ?? '')).toLowerCase().includes(q.toLowerCase())), [items, cat, mios, q, profile]);
+    (i.activo || esAdminLista) &&
+    (i.titulo + ' ' + (i.descripcion ?? '')).toLowerCase().includes(q.toLowerCase())), [items, cat, esAdminLista, q]);
 
-  const puedeEditar = (i: MarketplaceItem) => i.usuario_id === profile?.id || profile?.rol === 'admin';
+  const esAdmin = profile?.rol === 'admin';
+  const puedeEditar = (_i: MarketplaceItem) => esAdmin;
 
   const subir = async (f: File) => {
     if (!profile) return;
@@ -72,8 +72,8 @@ export default function Marketplace() {
 
   return (
     <div>
-      <PageHeader title="Marketplace" subtitle="Comprá y vendé entre vendedores del equipo"
-        action={<button className="btn-primary" onClick={() => setForm({ ...NUEVO, contacto: profile?.celular ?? '' })}><Plus size={18} /> Publicar</button>} />
+      <PageHeader title="Marketplace" subtitle="Comprá accesorios, insumos y más"
+        action={esAdmin && <button className="btn-primary" onClick={() => setForm({ ...NUEVO, contacto: profile?.celular ?? '' })}><Plus size={18} /> Publicar</button>} />
 
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
         <div className="relative flex-1">
@@ -84,14 +84,13 @@ export default function Marketplace() {
           <select className="input md:w-52" value={cat} onChange={(e) => setCat(e.target.value)}>
             <option>Todas</option>{CATEGORIAS_MK.map((c) => <option key={c}>{c}</option>)}
           </select>
-          <button className={mios ? 'btn-primary whitespace-nowrap' : 'btn-secondary whitespace-nowrap'} onClick={() => setMios(!mios)}>Mis publicaciones</button>
         </div>
       </div>
 
       {items === null ? <Spinner /> : lista.length === 0 ? (
         <Empty icon={<Store size={30} />} title={items.length === 0 ? 'Todavía no hay publicaciones' : 'Sin resultados'}
-          text={items.length === 0 ? 'Sé el primero en publicar un producto para el equipo.' : 'Probá con otra búsqueda o categoría.'}
-          action={<button className="btn-primary" onClick={() => setForm({ ...NUEVO, contacto: profile?.celular ?? '' })}><Plus size={18} /> Publicar producto</button>} />
+          text={items.length === 0 ? 'Pronto vas a encontrar accesorios, insumos y más.' : 'Probá con otra búsqueda o categoría.'}
+          action={esAdmin && <button className="btn-primary" onClick={() => setForm({ ...NUEVO, contacto: profile?.celular ?? '' })}><Plus size={18} /> Publicar producto</button>} />
       ) : (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
           {lista.map((i) => (

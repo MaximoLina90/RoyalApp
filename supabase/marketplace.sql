@@ -49,3 +49,14 @@ begin
 end $$;
 drop trigger if exists mk_vendedor on public.marketplace_items;
 create trigger mk_vendedor before insert or update on public.marketplace_items for each row execute function public.mk_set_vendedor();
+
+-- 2026-10-21: solo el administrador publica
+drop policy if exists "mk alta" on public.marketplace_items;
+create policy "mk alta" on public.marketplace_items for insert to authenticated with check (usuario_id = auth.uid() and public.es_admin());
+drop policy if exists "mk edicion" on public.marketplace_items;
+create policy "mk edicion" on public.marketplace_items for update to authenticated using (public.es_admin()) with check (public.es_admin());
+drop policy if exists "mk baja" on public.marketplace_items;
+create policy "mk baja" on public.marketplace_items for delete to authenticated using (public.es_admin());
+drop policy if exists "mk fotos propias" on storage.objects;
+create policy "mk fotos propias" on storage.objects for all to authenticated
+  using (bucket_id = 'marketplace' and public.es_admin()) with check (bucket_id = 'marketplace' and public.es_admin());
