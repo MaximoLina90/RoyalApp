@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Expand, Package, Play, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Image as ImageIcon, Package, Play, PlayCircle, Plus, X } from 'lucide-react';
 import type { Producto, ProductoMedio } from '@/lib/types';
 import { pesos } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -107,10 +107,11 @@ export default function ProductDetail({ p, onClose }: { p: Producto | null; onCl
   const { add } = useCart();
   const [medios, setMedios] = useState<ProductoMedio[]>([]);
   const [sel, setSel] = useState(0);
+  const [selV, setSelV] = useState(0);
   const [visor, setVisor] = useState<number | null>(null);
 
   useEffect(() => {
-    setMedios([]); setSel(0); setVisor(null);
+    setMedios([]); setSel(0); setSelV(0); setVisor(null);
     if (!p) return;
     let vivo = true;
     supabase.from('producto_medios').select('*').eq('producto_id', p.id).in('estado', ['verificada', 'aprobada'])
@@ -120,32 +121,52 @@ export default function ProductDetail({ p, onClose }: { p: Producto | null; onCl
   }, [p]);
 
   if (!p) return null;
-  // Fotos primero (la principal adelante), después videos: todo en la misma galería.
-  let items: Item[] = [
-    ...medios.filter((m) => m.tipo === 'foto'),
+  let fotos: Item[] = medios.filter((m) => m.tipo === 'foto').map((m) => ({ id: m.id, tipo: 'foto', url: m.url }));
+  if (!fotos.length && p.imagen_url) fotos = [{ id: 'img', tipo: 'foto', url: p.imagen_url }];
+  const videos: Item[] = [
     ...medios.filter((m) => m.tipo === 'video'),
     ...medios.filter((m) => m.tipo === 'youtube'),
   ].map((m) => ({ id: m.id, tipo: m.tipo as Item['tipo'], url: m.url }));
-  if (!items.some((m) => m.tipo === 'foto') && p.imagen_url) items = [{ id: 'img', tipo: 'foto', url: p.imagen_url }, ...items];
-  const actual = items[sel] ?? items[0];
+  const foto = fotos[sel] ?? fotos[0];
+  const video = videos[selV] ?? videos[0];
 
   return (
     <Modal open={!!p} onClose={() => { if (visor === null) onClose(); }} title={p.nombre} wide>
       <div className="grid gap-5 md:grid-cols-2">
-        <div>
-          <div className={`overflow-hidden rounded-2xl ring-1 ring-slate-100 ${actual?.tipo === 'youtube' ? 'aspect-video bg-black' : actual?.tipo === 'video' ? 'aspect-square bg-white' : 'aspect-square bg-white'}`}>
-            {actual
-              ? <Media it={actual} onAbrir={() => setVisor(items.indexOf(actual))} />
-              : <div className="flex h-full items-center justify-center bg-gradient-to-br from-royal-50 to-slate-100 text-royal-200"><Package size={80} /></div>}
-          </div>
-          {items.length > 1 && (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-              {items.map((m, i) => (
-                <button key={m.id} onClick={() => setSel(i)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg ring-2 ${actual === m ? 'ring-royal-600' : 'ring-transparent'}`} aria-label={m.tipo === 'foto' ? `Foto ${i + 1}` : `Video ${i + 1}`}>
-                  <Miniatura it={m} />
-                </button>
-              ))}
+        <div className="space-y-5">
+          <section>
+            {videos.length > 0 && <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-700"><ImageIcon size={16} /> Fotos</p>}
+            <div className="aspect-square overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
+              {foto
+                ? <Media it={foto} onAbrir={() => setVisor(fotos.indexOf(foto))} />
+                : <div className="flex h-full items-center justify-center bg-gradient-to-br from-royal-50 to-slate-100 text-royal-200"><Package size={80} /></div>}
             </div>
+            {fotos.length > 1 && (
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {fotos.map((m, i) => (
+                  <button key={m.id} onClick={() => setSel(i)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg ring-2 ${foto === m ? 'ring-royal-600' : 'ring-transparent'}`} aria-label={`Foto ${i + 1}`}>
+                    <Miniatura it={m} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+          {video && (
+            <section>
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-700"><PlayCircle size={16} /> Videos</p>
+              <div className={`overflow-hidden rounded-2xl ring-1 ring-slate-100 ${video.tipo === 'youtube' ? 'aspect-video bg-black' : 'aspect-square bg-white'}`}>
+                <Media it={video} />
+              </div>
+              {videos.length > 1 && (
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                  {videos.map((m, i) => (
+                    <button key={m.id} onClick={() => setSelV(i)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg ring-2 ${video === m ? 'ring-royal-600' : 'ring-transparent'}`} aria-label={`Video ${i + 1}`}>
+                      <Miniatura it={m} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
           )}
         </div>
         <div className="flex flex-col">
@@ -155,7 +176,7 @@ export default function ProductDetail({ p, onClose }: { p: Producto | null; onCl
           <button className="btn-primary mt-6 md:mt-auto" onClick={() => { add(p); onClose(); }}><Plus size={18} /> Agregar al cotizador</button>
         </div>
       </div>
-      {visor !== null && items.length > 0 && <Visor items={items} inicio={visor} onClose={() => setVisor(null)} />}
+      {visor !== null && fotos.length > 0 && <Visor items={fotos} inicio={visor} onClose={() => setVisor(null)} />}
     </Modal>
   );
 }
