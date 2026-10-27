@@ -16,7 +16,7 @@ const ACCESOS = [
   { href: '/ventas', label: 'Mis pedidos', text: 'Historial de ventas', icon: Receipt, color: 'from-sky-500 to-blue-700' },
   { href: '/marketplace', label: 'Marketplace', text: 'Accesorios, insumos y más', icon: Store, color: 'from-violet-500 to-purple-700' },
   { href: '/publicidad', label: 'Publicidad', text: 'Flyers y videos para compartir', icon: Megaphone, color: 'from-fuchsia-500 to-pink-600' },
-  { href: '/recetas', label: 'Recetas Royal', text: 'Próximamente', icon: ChefHat, color: 'from-rose-500 to-red-600' },
+  { href: '/recetas', label: 'Recetas Royal', text: 'Paso a paso y con video', icon: ChefHat, color: 'from-rose-500 to-red-600' },
   { href: '/capacitacion', label: 'Capacitación', text: 'Videos, podcasts y lecturas', icon: GraduationCap, color: 'from-teal-500 to-cyan-700' },
 ];
 

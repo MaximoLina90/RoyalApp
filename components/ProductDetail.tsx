@@ -10,7 +10,7 @@ import { useCart } from './CartProvider';
 
 const visible = (m: ProductoMedio) => m.estado === 'verificada' || m.estado === 'aprobada';
 
-type Item = { id: string; tipo: 'foto' | 'video' | 'youtube'; url: string };
+export type Item = { id: string; tipo: 'foto' | 'video' | 'youtube'; url: string };
 
 // vq=large pide 480p como calidad inicial (YouTube puede subirla según la conexión).
 const ytEmbed = (id: string, auto = false) =>
@@ -44,7 +44,7 @@ function Miniatura({ it }: { it: Item }) {
   );
 }
 
-function Visor({ items, inicio, onClose }: { items: Item[]; inicio: number; onClose: () => void }) {
+export function Visor({ items, inicio, onClose }: { items: Item[]; inicio: number; onClose: () => void }) {
   const [i, setI] = useState(inicio);
   const toque = useRef<number | null>(null);
   const n = items.length;
