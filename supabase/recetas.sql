@@ -56,3 +56,15 @@ create policy "recetas archivos admin" on storage.objects for all to authenticat
 -- Productos Royal que usa la receta (texto de la ficha) y si solo usa productos que no se venden en Argentina
 alter table public.recetas add column if not exists productos_royal text[] not null default '{}';
 alter table public.recetas add column if not exists solo_otro_royal boolean not null default false;
+
+-- Página pública de una receta (para compartir con clientes sin acceso a la app)
+create or replace function public.receta_publica(p_slug text, p_vendedor uuid default null)
+returns json language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'receta', (select to_jsonb(r) - 'activo' - 'destacado' - 'solo_otro_royal' from recetas r where r.slug = p_slug and r.activo),
+    'vendedor', (select json_build_object('nombre', p.nombre, 'celular', p.celular) from profiles p
+                 where p.id = p_vendedor and coalesce(p.aprobado, false) and not coalesce(p.suspendido, false))
+  );
+$$;
+revoke all on function public.receta_publica(text, uuid) from public;
+grant execute on function public.receta_publica(text, uuid) to anon, authenticated;

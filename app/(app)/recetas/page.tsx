@@ -1,10 +1,11 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Users, Search, Heart, PlayCircle, ExternalLink, Share2, Star, EyeOff, Eye, Trash2, X, Expand, Check } from 'lucide-react';
+import { ChefHat, Clock, Users, Search, Heart, PlayCircle, ExternalLink, Share2, Star, EyeOff, Eye, Trash2, X, Expand, Check, Link2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner } from '@/components/ui';
 import { Visor, type Item } from '@/components/ProductDetail';
+import { UTENSILIOS, CATEGORIAS, esTitulo } from '@/lib/recetas';
 
 interface Receta {
   id: string; slug: string; titulo: string; descripcion: string | null; porciones: string | null; tiempo_min: number | null;
@@ -14,22 +15,9 @@ interface Receta {
   traducida: boolean; destacado: boolean; activo: boolean; productos_royal: string[]; solo_otro_royal: boolean;
 }
 
-const UTENSILIOS: Record<string, string> = {
-  olla_presion: 'Olla de presión', ollas_novel: 'Ollas', sarten: 'Sartenes', sarten_gourmet: 'Sartén Gourmet',
-  deluxe_easy_release: 'Deluxe Easy Release', paellera: 'Paellera', plancha_parrilla: 'Planchas y parrilla', pavera: 'Pavera',
-  casserole: 'Casserole', olla_grande: 'Ollas grandes', maxtractor: 'Maxtractor (jugos)', smart_temp: 'Smart Temp',
-  chocolatera: 'Chocolatera', expertea: 'ExperTea', espresso: 'Espresso', barista: 'Barista', cuchillos: 'Cuchillos',
-  tazones: 'Tazones', otro_royal: 'Otros Royal',
-};
-const CATEGORIAS: Record<string, string> = {
-  desayuno: 'Desayuno', entradas_snacks: 'Entradas y snacks', carnes: 'Carnes', pollo: 'Pollo', pescados_mariscos: 'Pescados y mariscos',
-  pastas_arroces: 'Pastas y arroces', sopas_guisos: 'Sopas y guisos', vegetariano: 'Vegetariano', ensaladas: 'Ensaladas',
-  postres: 'Postres', panes_masas: 'Panes y masas', bebidas: 'Bebidas', salsas_aderezos: 'Salsas y aderezos',
-};
 const DIF: Record<string, string> = { facil: 'Fácil', media: 'Media', dificil: 'Difícil' };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 const portada = (r: Receta) => r.fotos[0] ?? (r.video_tipo === 'youtube' && r.video_url ? ytThumb(r.video_url) : null);
-const esTitulo = (l: string) => { const t = l.trim(); return t.length < 70 && !/^\d/.test(t) && (t.endsWith(':') || /^(decoraci[oó]n|para (el|la|los|las|decorar|servir|montar))\b/i.test(t) && !/\d/.test(t)); };
 const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -157,24 +145,28 @@ export default function Recetas() {
           )}
         </>
       )}
-      {ver && <DetalleReceta r={ver} fav={favs.has(ver.id)} onFav={() => toggleFav(ver)} onClose={() => setVer(null)} esAdmin={esAdmin} onActualizar={(c) => actualizar(ver, c)} onBorrar={() => borrar(ver)} />}
+      {ver && <DetalleReceta r={ver} fav={favs.has(ver.id)} onFav={() => toggleFav(ver)} onClose={() => setVer(null)} esAdmin={esAdmin} onActualizar={(c) => actualizar(ver, c)} onBorrar={() => borrar(ver)} vendedorId={profile?.id} />}
     </div>
   );
 }
 
-function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar }: {
-  r: Receta; fav: boolean; onFav: () => void; onClose: () => void; esAdmin: boolean; onActualizar: (c: Partial<Receta>) => void; onBorrar: () => void;
+function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar, vendedorId }: {
+  vendedorId?: string; r: Receta; fav: boolean; onFav: () => void; onClose: () => void; esAdmin: boolean; onActualizar: (c: Partial<Receta>) => void; onBorrar: () => void;
 }) {
   const [sel, setSel] = useState(0);
   const [visor, setVisor] = useState<number | null>(null);
   const [hechos, setHechos] = useState<Set<number>>(new Set());
   const fotos: Item[] = r.fotos.map((u, i) => ({ id: `f${i}`, tipo: 'foto', url: u }));
 
+  const link = () => `${window.location.origin}/r/${r.slug}${vendedorId ? `?v=${vendedorId}` : ''}`;
   const compartir = async () => {
-    const t = `*${r.titulo}*\n\n${r.descripcion ? r.descripcion + '\n\n' : ''}Ingredientes:\n${r.ingredientes.map((i) => '• ' + i).join('\n')}\n\nPreparación:\n${r.pasos.map((p, i) => `${i + 1}. ${p}`).join('\n')}${r.video_tipo === 'youtube' && r.video_url ? `\n\nVideo: https://youtu.be/${r.video_url}` : ''}`;
-    if (navigator.share) { try { await navigator.share({ title: r.titulo, text: t }); return; } catch { /* cancelado */ } }
-    window.open(`https://wa.me/?text=${encodeURIComponent(t)}`, '_blank');
+    const url = link();
+    const t = `👨‍🍳 *${r.titulo}*${r.descripcion ? `\n${r.descripcion}` : ''}\n\nMirá la receta completa, con fotos${r.video_url ? ' y video' : ''}:`;
+    if (navigator.share) { try { await navigator.share({ title: r.titulo, text: t, url }); return; } catch { /* cancelado */ } }
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${t}\n${url}`)}`, '_blank');
   };
+  const [copiado, setCopiado] = useState(false);
+  const copiar = async () => { try { await navigator.clipboard.writeText(link()); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { prompt('Copiá el link:', link()); } };
 
   return (
     <Modal open onClose={() => { if (visor === null) onClose(); }} title={r.titulo} wide>
@@ -208,7 +200,9 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
 
         <div className="flex flex-wrap gap-2">
           <button onClick={onFav} className={`btn-secondary ${fav ? 'text-rose-600' : ''}`}><Heart size={16} fill={fav ? 'currentColor' : 'none'} /> {fav ? 'En favoritas' : 'Guardar'}</button>
-          <button onClick={compartir} className="btn-secondary"><Share2 size={16} /> Compartir</button>
+          <button onClick={compartir} className="btn-primary"><Share2 size={16} /> Compartir con cliente</button>
+          <button onClick={copiar} className="btn-secondary">{copiado ? <><Check size={16} /> Copiado</> : <><Link2 size={16} /> Copiar link</>}</button>
+          <a href={link()} target="_blank" rel="noreferrer" className="btn-secondary"><ExternalLink size={16} /> Ver como cliente</a>
         </div>
 
         <div className="grid gap-6 md:grid-cols-5">
