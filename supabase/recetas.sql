@@ -52,3 +52,7 @@ create policy "recetas archivos lectura" on storage.objects for select using (bu
 drop policy if exists "recetas archivos admin" on storage.objects;
 create policy "recetas archivos admin" on storage.objects for all to authenticated
   using (bucket_id = 'recetas' and public.es_admin()) with check (bucket_id = 'recetas' and public.es_admin());
+
+-- Productos Royal que usa la receta (texto de la ficha) y si solo usa productos que no se venden en Argentina
+alter table public.recetas add column if not exists productos_royal text[] not null default '{}';
+alter table public.recetas add column if not exists solo_otro_royal boolean not null default false;

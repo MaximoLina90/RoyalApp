@@ -11,7 +11,7 @@ interface Receta {
   dificultad: 'facil' | 'media' | 'dificil' | null; ingredientes: string[]; pasos: string[]; tips: string | null;
   categorias: string[]; utensilios: string[]; fotos: string[]; video_tipo: 'mp4' | 'youtube' | null; video_url: string | null;
   fuente_nombre: string | null; fuente_url: string | null; fuente_tipo: 'oficial' | 'extraoficial'; pais: string | null;
-  traducida: boolean; destacado: boolean; activo: boolean;
+  traducida: boolean; destacado: boolean; activo: boolean; productos_royal: string[]; solo_otro_royal: boolean;
 }
 
 const UTENSILIOS: Record<string, string> = {
@@ -29,6 +29,7 @@ const CATEGORIAS: Record<string, string> = {
 const DIF: Record<string, string> = { facil: 'Fácil', media: 'Media', dificil: 'Difícil' };
 const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 const portada = (r: Receta) => r.fotos[0] ?? (r.video_tipo === 'youtube' && r.video_url ? ytThumb(r.video_url) : null);
+const esTitulo = (l: string) => { const t = l.trim(); return t.length < 70 && !/^\d/.test(t) && (t.endsWith(':') || /^(decoraci[oó]n|para (el|la|los|las|decorar|servir|montar))\b/i.test(t) && !/\d/.test(t)); };
 const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -215,7 +216,9 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
             <section className="md:col-span-2">
               <h3 className="mb-2 font-bold text-royal-900">Ingredientes</h3>
               <ul className="space-y-1.5 text-sm text-slate-700">
-                {r.ingredientes.map((i, k) => <li key={k} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-royal-400" />{i}</li>)}
+                {r.ingredientes.map((i, k) => esTitulo(i)
+                  ? <li key={k} className="pt-2 text-xs font-bold uppercase tracking-wide text-royal-800 first:pt-0">{i.replace(/:\s*$/, '')}</li>
+                  : <li key={k} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-royal-400" />{i}</li>)}
               </ul>
             </section>
           )}
@@ -224,11 +227,13 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
               <h3 className="mb-2 font-bold text-royal-900">Preparación</h3>
               <ol className="space-y-2">
                 {r.pasos.map((p, k) => {
+                  if (esTitulo(p)) return <li key={k} className="pt-2 text-xs font-bold uppercase tracking-wide text-royal-800">{p.replace(/:\s*$/, '')}</li>;
+                  const n = r.pasos.slice(0, k + 1).filter((x) => !esTitulo(x)).length;
                   const ok = hechos.has(k);
                   return (
                     <li key={k}>
                       <button onClick={() => { const n = new Set(hechos); ok ? n.delete(k) : n.add(k); setHechos(n); }} className="flex w-full gap-3 text-left text-sm">
-                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${ok ? 'bg-emerald-500 text-white' : 'bg-royal-100 text-royal-700'}`}>{ok ? <Check size={14} /> : k + 1}</span>
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${ok ? 'bg-emerald-500 text-white' : 'bg-royal-100 text-royal-700'}`}>{ok ? <Check size={14} /> : n}</span>
                         <span className={`leading-relaxed ${ok ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{p}</span>
                       </button>
                     </li>
@@ -238,6 +243,7 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
             </section>
           )}
         </div>
+        {esAdmin && r.solo_otro_royal && <div className="rounded-xl bg-slate-100 p-3 text-xs text-slate-600">Oculta por defecto: usa solo productos que no se venden en Argentina ({r.productos_royal.join(', ') || 'otros Royal'}).</div>}
         {r.tips && <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><b>Tip:</b> {r.tips}</div>}
 
         {r.video_url && (
