@@ -248,7 +248,7 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
               <ul className="space-y-1.5 text-sm text-slate-700">
                 {r.ingredientes.map((i, k) => esTitulo(i)
                   ? <li key={k} className="pt-2 text-xs font-bold uppercase tracking-wide text-royal-800 first:pt-0">{i.replace(/:\s*$/, '')}</li>
-                  : <li key={k} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-royal-400" />{i}</li>)}
+                  : <li key={k} className="flex gap-2"><span aria-hidden className="shrink-0 font-bold leading-5 text-royal-600">•</span><span>{i}</span></li>)}
               </ul>
             </section>
           )}
