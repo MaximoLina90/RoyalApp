@@ -59,11 +59,14 @@ export default function Recetas() {
     else guardarRecetario([...recetario, r.id]);
   };
 
+  const [popular, setPopular] = useState<Map<string, number>>(new Map());
   const cargar = useCallback(async () => {
-    const [{ data }, { data: f }] = await Promise.all([
+    const [{ data }, { data: f }, { data: pop }] = await Promise.all([
       supabase.from('recetas').select('*').order('destacado', { ascending: false }).order('titulo'),
       supabase.from('recetas_favoritas').select('receta_id'),
+      supabase.rpc('popularidad_recetas'),
     ]);
+    setPopular(new Map(((pop as { slug: string; puntos: number }[]) ?? []).map((x) => [x.slug, x.puntos])));
     setItems((data as Receta[]) ?? []);
     setFavs(new Set(((f as { receta_id: string }[]) ?? []).map((x) => x.receta_id)));
   }, []);
@@ -84,8 +87,8 @@ export default function Recetas() {
       (!ut || r.utensilios.includes(ut)) && (!cat || r.categorias.includes(cat)) &&
       (!soloFav || favs.has(r.id)) && (!soloVideo || !!r.video_url) && (fuente === 'todas' || r.fuente_tipo === fuente) &&
       (!t || norm(r.titulo).includes(t) || r.ingredientes.some((i) => norm(i).includes(t))))
-      .sort((a, b) => Number(b.activo) - Number(a.activo));
-  }, [base, txt, ut, cat, soloFav, soloVideo, fuente, favs]);
+      .sort((a, b) => Number(b.activo) - Number(a.activo) || (popular.get(b.slug) ?? 0) - (popular.get(a.slug) ?? 0));
+  }, [base, txt, ut, cat, soloFav, soloVideo, fuente, favs, popular]);
   const cuenta = (campo: 'utensilios' | 'categorias', k: string) => base.filter((r) => r[campo].includes(k)).length;
   const uts = Object.keys(UTENSILIOS).filter((k) => cuenta('utensilios', k) > 0);
   const cats = Object.keys(CATEGORIAS).filter((k) => cuenta('categorias', k) > 0);
