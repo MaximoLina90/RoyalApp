@@ -6,6 +6,7 @@ import { TrendingUp, Trophy, Receipt, Wallet, Search, Users } from 'lucide-react
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Spinner, Stat } from '@/components/ui';
+import ActividadClientes from '@/components/ActividadClientes';
 import { pesos, MESES } from '@/lib/format';
 import { rama, esLider, etiquetaEquipo } from '@/lib/red';
 import type { Nodo, VentaRed } from '@/lib/types';
@@ -139,6 +140,7 @@ export default function Estadisticas() {
           </div>
         )}
       </>)}
+      <div className="mt-5"><ActividadClientes key={alcance} soloMia={alcance === 'mias' || !tieneRed} /></div>
     </div>
   );
 }

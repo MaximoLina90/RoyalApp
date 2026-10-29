@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChefHat, Clock, Users, Search, Heart, PlayCircle, ExternalLink, Share2, Star, EyeOff, Eye, Trash2, X, Expand, Check, Link2 } from 'lucide-react';
+import { ChefHat, Clock, Users, Search, Heart, PlayCircle, ExternalLink, Share2, Star, EyeOff, Eye, Trash2, X, Expand, Check, Link2, BookOpen, FileDown, CalendarCheck } from 'lucide-react';
+import { generarRecetario } from '@/lib/recetarioPdf';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner } from '@/components/ui';
@@ -12,7 +13,15 @@ interface Receta {
   dificultad: 'facil' | 'media' | 'dificil' | null; ingredientes: string[]; pasos: string[]; tips: string | null;
   categorias: string[]; utensilios: string[]; fotos: string[]; video_tipo: 'mp4' | 'youtube' | null; video_url: string | null;
   fuente_nombre: string | null; fuente_url: string | null; fuente_tipo: 'oficial' | 'extraoficial'; pais: string | null;
-  traducida: boolean; destacado: boolean; activo: boolean; productos_royal: string[]; solo_otro_royal: boolean;
+  traducida: boolean; destacado: boolean; activo: boolean; productos_royal: string[]; solo_otro_royal: boolean; semana: string | null;
+}
+
+const MAX_RECETARIO = 8;
+/** Lunes de la semana actual (hora Argentina) como YYYY-MM-DD. */
+function lunes() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 const DIF: Record<string, string> = { facil: 'Fácil', media: 'Media', dificil: 'Difícil' };
@@ -40,6 +49,15 @@ export default function Recetas() {
   const [soloVideo, setSoloVideo] = useState(false);
   const [fuente, setFuente] = useState<'todas' | 'oficial' | 'extraoficial'>('todas');
   const [ver, setVer] = useState<Receta | null>(null);
+  const [recetario, setRecetario] = useState<string[]>([]);
+  const [armar, setArmar] = useState(false);
+  useEffect(() => { try { setRecetario(JSON.parse(localStorage.getItem('recetario') ?? '[]')); } catch { /* vacío */ } }, []);
+  const guardarRecetario = (xs: string[]) => { setRecetario(xs); try { localStorage.setItem('recetario', JSON.stringify(xs)); } catch { /* sin storage */ } };
+  const toggleRecetario = (r: Receta) => {
+    if (recetario.includes(r.id)) guardarRecetario(recetario.filter((x) => x !== r.id));
+    else if (recetario.length >= MAX_RECETARIO) alert(`El recetario admite hasta ${MAX_RECETARIO} recetas.`);
+    else guardarRecetario([...recetario, r.id]);
+  };
 
   const cargar = useCallback(async () => {
     const [{ data }, { data: f }] = await Promise.all([
@@ -54,6 +72,10 @@ export default function Recetas() {
     const u = new URLSearchParams(window.location.search).get('utensilio');
     if (u && UTENSILIOS[u]) setUt(u);
   }, []);
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('receta');
+    if (slug && items) { const r = items.find((x) => x.slug === slug); if (r) setVer(r); }
+  }, [items]);
 
   const base = useMemo(() => (items ?? []).filter((r) => esAdmin || r.activo), [items, esAdmin]);
   const filtradas = useMemo(() => {
@@ -71,6 +93,13 @@ export default function Recetas() {
     const n = new Set(favs);
     if (n.has(r.id)) { n.delete(r.id); setFavs(n); await supabase.from('recetas_favoritas').delete().eq('receta_id', r.id); }
     else { n.add(r.id); setFavs(n); await supabase.from('recetas_favoritas').insert({ receta_id: r.id }); }
+  };
+  const fijarSemana = async (r: Receta) => {
+    const l = lunes();
+    if (r.semana === l) return actualizar(r, { semana: null });
+    await supabase.from('recetas').update({ semana: null }).eq('semana', l);
+    setItems((xs) => (xs ?? []).map((x) => (x.semana === l ? { ...x, semana: null } : x)));
+    await actualizar(r, { semana: l });
   };
   const actualizar = async (r: Receta, cambios: Partial<Receta>) => {
     await supabase.from('recetas').update(cambios).eq('id', r.id);
@@ -145,13 +174,19 @@ export default function Recetas() {
           )}
         </>
       )}
-      {ver && <DetalleReceta r={ver} fav={favs.has(ver.id)} onFav={() => toggleFav(ver)} onClose={() => setVer(null)} esAdmin={esAdmin} onActualizar={(c) => actualizar(ver, c)} onBorrar={() => borrar(ver)} vendedorId={profile?.id} />}
+      {recetario.length > 0 && (
+        <button onClick={() => setArmar(true)} className="fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-full bg-royal-700 px-4 py-3 text-sm font-bold text-white shadow-xl md:bottom-6">
+          <BookOpen size={18} /> Recetario ({recetario.length})
+        </button>
+      )}
+      {armar && <ArmarRecetario recetas={recetario.map((id) => (items ?? []).find((x) => x.id === id)).filter(Boolean) as Receta[]} onQuitar={(id) => guardarRecetario(recetario.filter((x) => x !== id))} onVaciar={() => { guardarRecetario([]); setArmar(false); }} onClose={() => setArmar(false)} />}
+      {ver && <DetalleReceta enRecetario={recetario.includes(ver.id)} onRecetario={() => toggleRecetario(ver)} esSemana={ver.semana === lunes()} onSemana={() => fijarSemana(ver)} r={ver} fav={favs.has(ver.id)} onFav={() => toggleFav(ver)} onClose={() => setVer(null)} esAdmin={esAdmin} onActualizar={(c) => actualizar(ver, c)} onBorrar={() => borrar(ver)} vendedorId={profile?.id} />}
     </div>
   );
 }
 
-function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar, vendedorId }: {
-  vendedorId?: string; r: Receta; fav: boolean; onFav: () => void; onClose: () => void; esAdmin: boolean; onActualizar: (c: Partial<Receta>) => void; onBorrar: () => void;
+function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar, vendedorId, enRecetario, onRecetario, esSemana, onSemana }: {
+  enRecetario: boolean; onRecetario: () => void; esSemana: boolean; onSemana: () => void; vendedorId?: string; r: Receta; fav: boolean; onFav: () => void; onClose: () => void; esAdmin: boolean; onActualizar: (c: Partial<Receta>) => void; onBorrar: () => void;
 }) {
   const [sel, setSel] = useState(0);
   const [visor, setVisor] = useState<number | null>(null);
@@ -202,6 +237,7 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
           <button onClick={onFav} className={`btn-secondary ${fav ? 'text-rose-600' : ''}`}><Heart size={16} fill={fav ? 'currentColor' : 'none'} /> {fav ? 'En favoritas' : 'Guardar'}</button>
           <button onClick={compartir} className="btn-primary"><Share2 size={16} /> Compartir con cliente</button>
           <button onClick={copiar} className="btn-secondary">{copiado ? <><Check size={16} /> Copiado</> : <><Link2 size={16} /> Copiar link</>}</button>
+          <button onClick={onRecetario} className={`btn-secondary ${enRecetario ? 'text-royal-700' : ''}`}>{enRecetario ? <><Check size={16} /> En el recetario</> : <><BookOpen size={16} /> Al recetario</>}</button>
           <a href={link()} target="_blank" rel="noreferrer" className="btn-secondary"><ExternalLink size={16} /> Ver como cliente</a>
         </div>
 
@@ -261,12 +297,55 @@ function DetalleReceta({ r, fav, onFav, onClose, esAdmin, onActualizar, onBorrar
           <div className="flex flex-wrap gap-2 rounded-xl bg-slate-50 p-3">
             <span className="w-full text-xs font-semibold text-slate-500">Administración</span>
             <button onClick={() => onActualizar({ destacado: !r.destacado })} className="btn-secondary text-xs"><Star size={14} fill={r.destacado ? 'currentColor' : 'none'} /> {r.destacado ? 'Quitar destacada' : 'Destacar'}</button>
+            <button onClick={onSemana} className="btn-secondary text-xs"><CalendarCheck size={14} /> {esSemana ? 'Quitar de receta de la semana' : 'Receta de esta semana'}</button>
             <button onClick={() => onActualizar({ activo: !r.activo })} className="btn-secondary text-xs">{r.activo ? <><EyeOff size={14} /> Ocultar</> : <><Eye size={14} /> Mostrar</>}</button>
             <button onClick={onBorrar} className="btn-secondary text-xs text-red-600"><Trash2 size={14} /> Borrar</button>
           </div>
         )}
       </div>
       {visor !== null && <Visor items={fotos} inicio={visor} onClose={() => setVisor(null)} />}
+    </Modal>
+  );
+}
+
+function ArmarRecetario({ recetas, onQuitar, onVaciar, onClose }: { recetas: Receta[]; onQuitar: (id: string) => void; onVaciar: () => void; onClose: () => void }) {
+  const { profile } = useAuth();
+  const [cliente, setCliente] = useState('');
+  const [busy, setBusy] = useState(false);
+  const generar = async (modo: 'compartir' | 'descargar') => {
+    setBusy(true);
+    try {
+      const { blob, nombre } = await generarRecetario(recetas, { cliente, vendedor: profile ?? null, origen: window.location.origin });
+      const file = new File([blob], nombre, { type: 'application/pdf' });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (modo === 'compartir' && nav.share && nav.canShare?.({ files: [file] })) {
+        try { await nav.share({ files: [file], title: 'Recetario Royal Prestige' }); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; }
+      }
+      const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 4000);
+    } catch { alert('No se pudo generar el PDF'); } finally { setBusy(false); }
+  };
+  return (
+    <Modal open onClose={onClose} title="Recetario para la demo">
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">PDF con tapa y tus datos, la lista de compras con casilleros y cada receta con foto, ingredientes, pasos y el link al video.</p>
+        <ul className="divide-y divide-slate-100 rounded-xl ring-1 ring-slate-100">
+          {recetas.map((r, i) => (
+            <li key={r.id} className="flex items-center gap-3 p-2.5">
+              <span className="w-5 text-center text-xs font-bold text-slate-400">{i + 1}</span>
+              {r.fotos[0] ? <img src={r.fotos[0]} alt="" className="h-10 w-10 rounded-lg object-cover" /> : <span className="h-10 w-10 rounded-lg bg-slate-100" />}
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{r.titulo}</span>
+              <button onClick={() => onQuitar(r.id)} className="p-1.5 text-slate-400 hover:text-red-600" aria-label="Quitar"><X size={16} /></button>
+            </li>
+          ))}
+        </ul>
+        <div><label className="label">Cliente (opcional)</label><input className="input" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Para quién es el recetario" /></div>
+        <button className="btn-primary w-full" disabled={busy || !recetas.length} onClick={() => generar('compartir')}><Share2 size={17} /> {busy ? 'Generando…' : 'Compartir PDF'}</button>
+        <div className="grid grid-cols-2 gap-2">
+          <button className="btn-secondary" disabled={busy || !recetas.length} onClick={() => generar('descargar')}><FileDown size={17} /> Descargar</button>
+          <button className="btn-ghost text-red-600" onClick={() => confirm('¿Vaciar el recetario?') && onVaciar()}><Trash2 size={16} /> Vaciar</button>
+        </div>
+      </div>
     </Modal>
   );
 }

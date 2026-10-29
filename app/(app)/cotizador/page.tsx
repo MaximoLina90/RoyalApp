@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Minus, Trash2, ShoppingCart, Search, Check, Share2, FileDown, MessageCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, Search, Check, Share2, FileDown, MessageCircle, Link2 } from 'lucide-react';
 import { generarPresupuesto } from '@/lib/presupuestoPdf';
 import { useCart } from '@/components/CartProvider';
 import { useCatalogo, useConfig } from '@/components/data';
@@ -73,6 +73,20 @@ export default function Cotizador() {
     try { const { blob, nombre } = await pdf(); descargar(blob, nombre); setCompartirOpen(false); }
     catch { toast.show('No se pudo generar el PDF', 'error'); }
     finally { setPdfBusy(false); }
+  };
+
+  const enviarLink = async () => {
+    setPdfBusy(true);
+    const { data, error } = await supabase.from('presupuestos').insert({
+      cliente: cliente.trim() || null, items, porcentaje: r.financiado ? porc : 0, cuotas: r.financiado ? cuotas : 1, factores: cfg.factores, dias_mes: cfg.dias_mes,
+    }).select('id').single();
+    setPdfBusy(false);
+    if (error || !data) return toast.show('No se pudo crear el link', 'error');
+    const url = `${window.location.origin}/q/${data.id}`;
+    const t = `Hola${cliente.trim() ? ' ' + cliente.trim().split(' ')[0] : ''}! Te paso el presupuesto Royal Prestige®, con todos los planes de cuotas:`;
+    if (navigator.share) { try { await navigator.share({ title: 'Presupuesto Royal Prestige', text: t, url }); setCompartirOpen(false); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; } }
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${t}\n${url}`)}`, '_blank');
+    setCompartirOpen(false);
   };
 
   const compartirTexto = () => window.open('https://wa.me/?text=' + encodeURIComponent(texto()), '_blank');
@@ -193,7 +207,9 @@ export default function Cotizador() {
       <Modal open={compartirOpen} onClose={() => setCompartirOpen(false)} title="Compartir presupuesto">
         <div className="space-y-4">
           <p className="text-sm text-slate-500">{cliente.trim() ? `Presupuesto para ${cliente.trim()}. ` : 'Sin cliente cargado: el PDF no lo incluye. '}Se genera un PDF con los productos, códigos, precios de lista, la forma de pago elegida, la tabla de todos los planes y tus datos de contacto.</p>
-          <button className="btn-primary w-full" onClick={compartirPdf} disabled={pdfBusy}><Share2 size={17} /> {pdfBusy ? 'Generando…' : 'Compartir PDF'}</button>
+          <button className="btn-primary w-full" onClick={enviarLink} disabled={pdfBusy}><Link2 size={17} /> {pdfBusy ? 'Generando…' : 'Enviar link con botón "Lo quiero"'}</button>
+          <p className="-mt-2 text-xs text-slate-500">Te avisamos cuando el cliente lo abre o toca &quot;Lo quiero&quot;.</p>
+          <button className="btn-secondary w-full" onClick={compartirPdf} disabled={pdfBusy}><Share2 size={17} /> Compartir PDF</button>
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-secondary" onClick={bajarPdf} disabled={pdfBusy}><FileDown size={17} /> Descargar</button>
             <button className="btn-secondary" onClick={compartirTexto}><MessageCircle size={17} /> Solo texto</button>

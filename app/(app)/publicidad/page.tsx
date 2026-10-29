@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Empty, Modal, Spinner, Toast } from '@/components/ui';
 import { useToast } from '@/components/useToast';
+import RecetaSemana from '@/components/RecetaSemana';
 
 type Tipo = 'imagen' | 'video' | 'pdf' | 'texto';
 interface Pieza { id: string; titulo: string; descripcion: string | null; categoria: string; tipo: Tipo; archivo_url: string | null; texto: string | null; destacado: boolean; activo: boolean; vence: string | null; created_at: string }
@@ -113,6 +114,7 @@ export default function Publicidad() {
     <div>
       <PageHeader title="Publicidad" subtitle="Material listo para compartir con tus clientes"
         action={esAdmin ? <button className="btn-primary" onClick={() => setForm({ ...vacio, categoria: cat !== 'Todas' ? cat : CATEGORIAS[0] })}><Plus size={18} /> Subir material</button> : undefined} />
+      <div className="mb-5"><RecetaSemana /></div>
 
       {items === null ? <Spinner /> : items.length === 0 ? (
         <Empty icon={<Megaphone size={30} />} title="Todavía no hay material" text={esAdmin ? 'Subí flyers, videos, PDFs o textos. Tu red los va a poder descargar y compartir con su nombre y celular.' : 'Pronto vas a encontrar acá flyers, videos y textos para compartir.'} />

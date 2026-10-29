@@ -7,6 +7,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { pesos, hoyISO, EVENTO_COLOR } from '@/lib/format';
 import type { Tarea } from '@/lib/types';
 import { Stat } from '@/components/ui';
+import ActividadClientes from '@/components/ActividadClientes';
+import RecetaSemana from '@/components/RecetaSemana';
 
 const ACCESOS = [
   { href: '/catalogo', label: 'Catálogo', text: 'Productos y fichas', icon: BookOpen, color: 'from-royal-500 to-royal-700' },
@@ -56,6 +58,9 @@ export default function Inicio() {
           </Link>
         ))}
       </div>
+
+      <RecetaSemana />
+      <ActividadClientes compacto soloMia />
 
       <div className="card p-5">
         <div className="mb-3 flex items-center justify-between">

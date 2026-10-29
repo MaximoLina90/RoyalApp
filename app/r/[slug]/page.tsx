@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { anonimo, uuidOk, waLink } from '@/lib/publico';
+import { Rastreo, BotonWa } from '@/components/Rastreo';
 import { Clock, Users, ChefHat, MessageCircle, PlayCircle } from 'lucide-react';
 import RecetaFotos from '@/components/RecetaFotos';
 import { UTENSILIOS, esTitulo } from '@/lib/recetas';
@@ -14,22 +15,9 @@ type Receta = {
 };
 type Vendedor = { nombre: string | null; celular: string | null } | null;
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 async function cargar(slug: string, v?: string): Promise<{ receta: Receta | null; vendedor: Vendedor }> {
-  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const { data } = await sb.rpc('receta_publica', { p_slug: slug, p_vendedor: v && UUID.test(v) ? v : null });
+  const { data } = await anonimo().rpc('receta_publica', { p_slug: slug, p_vendedor: uuidOk(v) });
   return (data as { receta: Receta | null; vendedor: Vendedor }) ?? { receta: null, vendedor: null };
-}
-
-/** Celular argentino → dígitos para wa.me (549…). */
-function waNumero(cel: string) {
-  let d = cel.replace(/\D/g, '');
-  if (d.startsWith('549')) return d;
-  if (d.startsWith('54')) d = d.slice(2);
-  d = d.replace(/^0/, '');
-  if (d.length === 12) for (const n of [2, 3, 4]) if (d.slice(n, n + 2) === '15') { d = d.slice(0, n) + d.slice(n + 2); break; }
-  return '549' + d;
 }
 
 type Props = { params: { slug: string }; searchParams: { v?: string } };
@@ -49,13 +37,13 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 export default async function RecetaPublica({ params, searchParams }: Props) {
   const { receta: r, vendedor } = await cargar(params.slug, searchParams.v);
   if (!r) notFound();
-  const wa = vendedor?.celular
-    ? `https://wa.me/${waNumero(vendedor.celular)}?text=${encodeURIComponent(`Hola ${vendedor.nombre ?? ''}! Vi la receta "${r.titulo}" y quiero consultarte por los productos Royal Prestige.`)}`
-    : null;
+  const wa = waLink(vendedor?.celular, `Hola ${vendedor?.nombre ?? ''}! Vi la receta "${r.titulo}" y quiero consultarte por los productos Royal Prestige.`);
+  const v = vendedor ? uuidOk(searchParams.v) : null;
   let n = 0;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
+      <Rastreo v={v} tipo="receta" refId={r.slug} titulo={r.titulo} />
       <header className="bg-gradient-to-r from-royal-800 to-royal-600 px-4 py-3 text-white">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg bg-white object-contain p-0.5" />
@@ -114,13 +102,13 @@ export default async function RecetaPublica({ params, searchParams }: Props) {
             </div>
           </div>
           <p className="mt-3 text-sm text-white/85">¿Querés cocinar esta receta con los productos Royal Prestige®? Pedí una demostración sin compromiso.</p>
-          {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-bold text-white shadow hover:bg-emerald-600"><MessageCircle size={18} /> Escribime por WhatsApp</a>}
+          {wa && <BotonWa href={wa} v={v} tipo="receta" refId={r.slug} titulo={r.titulo} className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 font-bold text-white shadow hover:bg-emerald-600"><MessageCircle size={18} /> Escribime por WhatsApp</BotonWa>}
         </section>
       </main>
       {wa && (
-        <a href={wa} target="_blank" rel="noreferrer" className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-3.5 font-bold text-white shadow-xl md:hidden">
+        <BotonWa href={wa} v={v} tipo="receta" refId={r.slug} titulo={r.titulo} className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-3.5 font-bold text-white shadow-xl md:hidden">
           <MessageCircle size={18} /> Consultar a {vendedor?.nombre?.split(' ')[0] ?? 'tu asesor'}
-        </a>
+        </BotonWa>
       )}
     </div>
   );

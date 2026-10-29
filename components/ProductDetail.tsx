@@ -1,7 +1,10 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Expand, Image as ImageIcon, Package, Play, PlayCircle, Plus, X } from 'lucide-react';
+import Link from 'next/link';
+import { ChefHat, ChevronLeft, ChevronRight, Expand, Image as ImageIcon, Package, Play, PlayCircle, Plus, Share2, X } from 'lucide-react';
+import { utensilioDeProducto } from '@/lib/recetas';
+import { useAuth } from './AuthProvider';
 import type { Producto, ProductoMedio } from '@/lib/types';
 import { pesos } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -105,6 +108,7 @@ export function Visor({ items, inicio, onClose }: { items: Item[]; inicio: numbe
 
 export default function ProductDetail({ p, onClose }: { p: Producto | null; onClose: () => void }) {
   const { add } = useCart();
+  const { profile } = useAuth();
   const [medios, setMedios] = useState<ProductoMedio[]>([]);
   const [sel, setSel] = useState(0);
   const [selV, setSelV] = useState(0);
@@ -128,6 +132,13 @@ export default function ProductDetail({ p, onClose }: { p: Producto | null; onCl
     ...medios.filter((m) => m.tipo === 'youtube'),
   ].map((m) => ({ id: m.id, tipo: m.tipo as Item['tipo'], url: m.url }));
   const foto = fotos[sel] ?? fotos[0];
+  const ut = utensilioDeProducto(p.nombre);
+  const compartir = async () => {
+    const url = `${window.location.origin}/p/${p.id}${profile?.id ? `?v=${profile.id}` : ''}`;
+    const t = `Mirá el ${p.nombre} de Royal Prestige®, con fotos, videos y recetas:`;
+    if (navigator.share) { try { await navigator.share({ title: p.nombre, text: t, url }); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; } }
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${t}\n${url}`)}`, '_blank');
+  };
   const video = videos[selV] ?? videos[0];
 
   return (
@@ -173,7 +184,13 @@ export default function ProductDetail({ p, onClose }: { p: Producto | null; onCl
           {p.codigo && <p className="text-xs font-semibold text-slate-500">Código {p.codigo}</p>}
           <p className="mt-1 text-3xl font-bold text-royal-700">{p.precio > 0 ? pesos(p.precio) : 'Sin precio'}</p>
           <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-600">{p.descripcion || 'Sin descripción.'}</p>
-          <button className="btn-primary mt-6 md:mt-auto" onClick={() => { add(p); onClose(); }}><Plus size={18} /> Agregar al cotizador</button>
+          <div className="mt-6 space-y-2 md:mt-auto">
+            <button className="btn-primary w-full" onClick={() => { add(p); onClose(); }}><Plus size={18} /> Agregar al cotizador</button>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-secondary" onClick={compartir}><Share2 size={16} /> Compartir</button>
+              {ut ? <Link href={`/recetas?utensilio=${ut}`} className="btn-secondary"><ChefHat size={16} /> Ver recetas</Link> : <span />}
+            </div>
+          </div>
         </div>
       </div>
       {visor !== null && fotos.length > 0 && <Visor items={fotos} inicio={visor} onClose={() => setVisor(null)} />}
