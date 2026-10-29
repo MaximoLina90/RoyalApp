@@ -83,7 +83,8 @@ export default function Recetas() {
     return base.filter((r) =>
       (!ut || r.utensilios.includes(ut)) && (!cat || r.categorias.includes(cat)) &&
       (!soloFav || favs.has(r.id)) && (!soloVideo || !!r.video_url) && (fuente === 'todas' || r.fuente_tipo === fuente) &&
-      (!t || norm(r.titulo).includes(t) || r.ingredientes.some((i) => norm(i).includes(t))));
+      (!t || norm(r.titulo).includes(t) || r.ingredientes.some((i) => norm(i).includes(t))))
+      .sort((a, b) => Number(b.activo) - Number(a.activo));
   }, [base, txt, ut, cat, soloFav, soloVideo, fuente, favs]);
   const cuenta = (campo: 'utensilios' | 'categorias', k: string) => base.filter((r) => r[campo].includes(k)).length;
   const uts = Object.keys(UTENSILIOS).filter((k) => cuenta('utensilios', k) > 0);
