@@ -24,11 +24,7 @@ export default function Login() {
     await refresh();
   };
 
-  const recuperar = async () => {
-    if (!email) { setError('Escribí tu email para recuperar la contraseña.'); return; }
-    await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${location.origin}/login` });
-    setError('Te enviamos un correo para restablecer la contraseña.');
-  };
+  const recuperar = () => router.push('/recuperar' + (email.trim() ? `?email=${encodeURIComponent(email.trim())}` : ''));
 
   return (
     <AuthCard title="Bienvenido/a" subtitle="Ingresá con tu cuenta de vendedor.">
